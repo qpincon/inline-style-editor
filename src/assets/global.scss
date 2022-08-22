@@ -1,0 +1,14 @@
+@import "~bulma/bulma";
+
+.layout_default.picker_wrapper {
+    width: 17em;
+    .picker_done {
+        display: none;
+    }
+    .picker_slider, .picker_selector{
+        padding: 0.5em;
+    }
+    .picker_editor input {
+        font-size: 0.7rem;
+    }
+}
