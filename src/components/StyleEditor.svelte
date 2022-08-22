@@ -13,8 +13,8 @@
     const cssPropByType = {
         "border-radius": {type: "slider", min: 0, max: 30, suffix: 'px'},
         "border-width": {type: "slider", min: 0, max: 30, suffix: 'px'},
-        "border-color": {type: "color"},
         "border-style": {type: 'select', choices: () => ["none", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset",]},
+        "border-color": {type: "color"},
         "font-family": { type: 'select', choices: getFontFamilies},
         "font-size": {type: "slider", min: 0, max: 30, suffix: 'px'},
         "font-weight": {type: "slider", min: 0, max: 500},
@@ -99,7 +99,7 @@
         return rules.map((rule, i) => {
             if (rule === 'inline') return 'inline';
             const cssSelector = rule.selectorText;
-            const title = rule.parentStyleSheet.title || `sheet ${i}`;
+            const title = rule.parentStyleSheet.title || `${i}`;
             return `${title}: ${cssSelector}`;
         });
     }
@@ -156,11 +156,11 @@
     }
     
     function getTargetsAndRules(e) {
-        allTypes = [];
-        allRules = [];
         selectedElemIndex = 0;
         selectedRuleIndex = 0;
         selectedTypeIndex = 0;
+        allTypes = [];
+        allRules = [];
         targetsToSearch = [e.target, ...getAdditionalElems(e.target)];
         allTypes = getEditableTypes(targetsToSearch);
         allRules = getMatchedCSSRules(targetsToSearch);
@@ -319,38 +319,44 @@ on:click={overlayClicked}>
     <div class="inner-wrapper">
         <div class="close-button" on:click={hide}>x</div>
         {#if targetsToSearch.length > 1}
-        <div>
+        <div class="select-tab">
+            <b> Elem </b>
             {#each targetsToSearch as target, elemIndex}
                 <span class:selected={selectedElemIndex === elemIndex} on:click={() => {selectedElemIndex = elemIndex;}}> Elem {elemIndex} </span>
             {/each}
         </div>
         {/if}
-        <div>
+        <div class="select-tab">
+            <b> Rule: </b>
             {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
-                <span class:selected="{selectedRuleIndex === ruleIndex}" on:click="{() => {selectedRuleIndex = ruleIndex;}}"> {ruleName} </span>
+                <span 
+                    class:selected="{selectedRuleIndex === ruleIndex}" 
+                    on:click="{() => {selectedRuleIndex = ruleIndex;}}"
+                >  {ruleName}</span>
             {/each}
         </div>
-        <div>
+        <div class="select-tab">
+            <b> Property type: </b>
             {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
                 <span class:selected="{selectedTypeIndex === typeIndex}" on:click="{() => {selectedTypeIndex = typeIndex;}}"> {type} </span>
             {/each}
         </div>
         {#if allTypes[selectedElemIndex]}
-        <div>
+        <div class="editor"> 
             {#each Object.entries(propGroupedByType) as [propType, propDefs]}
-            <!-- {(console.log(propType, propDefs, propTypeToSelectedIndex), '')} -->
-                {@const renderedDef = propDefs[propTypeToSelectedIndex[propType]] }
-                
-                {#if propDefs.length > 1}
-                    <div class="select is-small"> <select on:change="{(e) => updateChangedCssProp(propType, e)}">
-                        {#each propDefs as propDef, i}
-                            <option value="{i}"> {propDef.name} </option>
-                        {/each}
-                    </select> </div>
-                {:else}
-                    <span> { renderedDef.name } </span>
-                {/if}
-                <div>
+            {@const renderedDef = propDefs[propTypeToSelectedIndex[propType]] }
+                <div class="prop-section">
+                <!-- {(console.log(propType, propDefs, propTypeToSelectedIndex), '')} -->
+                    
+                    {#if propDefs.length > 1}
+                        <div> <select on:change="{(e) => updateChangedCssProp(propType, e)}">
+                            {#each propDefs as propDef, i}
+                                <option value="{i}"> {propDef.name} </option>
+                            {/each}
+                        </select> </div>
+                    {:else}
+                        <span> { renderedDef.name } </span>
+                    {/if}
                     {#if propType === 'slider'}
                     <!-- {(console.log(renderedDef), '')} -->
                         <RangeSlider min={renderedDef.min} 
@@ -359,13 +365,11 @@ on:click={overlayClicked}>
                             float 
                             on:change={(e) => updateCssRule(renderedDef.name, e.detail.value, renderedDef.suffix)}/>
                     {:else if propType == 'select'}
-                        <div class="select is-small">
-                            <select on:change={(e) => updateCssRule(renderedDef.name, e.target.value)}>
-                                {#each renderedDef.choices() as choice}
-                                    <option selected={choice == getComputedPropValue(currentElement, renderedDef.name, 'font') || null}> {choice} </option>
-                                {/each}
-                            </select>
-                        </div>
+                        <select on:change={(e) => updateCssRule(renderedDef.name, e.target.value)}>
+                            {#each renderedDef.choices() as choice}
+                                <option selected={choice == getComputedPropValue(currentElement, renderedDef.name, 'font') || null}> {choice} </option>
+                            {/each}
+                        </select>
                     {:else if propType == 'color'}
                         <ColorPicker 
                             value={getComputedPropValue(currentElement, renderedDef.name, 'rgb')}
@@ -393,33 +397,77 @@ on:click={overlayClicked}>
         pointer-events: painted;
     }
     .wrapper {
-        font-size: 0.8rem;
+        font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;
+        font-size: 10px;
         z-index: 9999999;
         position: absolute;
-        background-color: wheat;
+        background-color: #edf2f7;
+        max-width: 250px;
+        border-radius: 5px;
+        box-shadow: 0px 8px 17px 2px rgba(0, 0, 0, 0.487);
+    }
+    .wrapper .select-tab {
+        display: flex;
+        align-items: center;
+        background-color: #edf2f7;
+        padding: 5px 0 5px 0;
+        margin: 0 10px 0 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .wrapper .select-tab > span {
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+        min-width: 50px;
+        padding: 3px;
+        text-align: center;
+        color: #718096;
+        cursor: pointer;
+    }
+    .wrapper .select-tab > b {
+        margin-right: 5px;
+        color: #5d5d5d;
     }
     .inner-wrapper {
         position: relative;
     }
+    .editor {
+        padding: 5px;
+    }
+    .editor .prop-section {
+        display: flex;
+        align-items: center;
+        margin: 5px 0;
+    }
+    .editor .prop-section > span {
+        margin: 0 5px;
+    }
+    .editor .prop-section :first-child {
+        color: #5d5d5d;
+        font-weight: bold;
+    }
     .close-button {
         position: absolute;
-        top: -5px;
-        right: -5px;
+        top: -7px;
+        right: -7px;
         background-color: #dbdbdb;
         color: #818181;
-        border-radius: 100%;
-        width: 20px;
-        height: 20px;
+        width: 15px;
+        height: 15px;
         display: flex;
         justify-content: center;
         align-items: center;
         cursor: pointer;
+        border-radius: 3px;
     }
-    :global(.font-size .rangeSlider) {
+    :global(.rangeSlider) {
         flex: 1 0 auto;
     }
-    .selected {
-        border: 1px solid black;
+    .wrapper .select-tab span.selected {
+        border-radius: 2px;
+        box-shadow: 0 1px 3px 0 rgba(0,0,0,.1),0 1px 2px 0 rgba(0,0,0,.06);
+        color: #0069d9;
+        background-color: white;
     }
 
 </style>
