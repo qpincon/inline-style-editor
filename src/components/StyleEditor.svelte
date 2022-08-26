@@ -1,10 +1,11 @@
 <script>
-    import RangeSlider from "svelte-range-slider-pips";
-    import ColorPicker from './ColorPicker.svelte';
+    import '../assets/index.scss';
     import { onMount, onDestroy } from "svelte";
-    import { pick, debounce } from 'lodash';
-    import * as d3 from 'd3-contour';
-    import * as d3g from 'd3-geo';
+    
+    import pick from 'lodash.pick';
+    import debounce from 'lodash.debounce';
+    import { computeContours } from '../util/boxesContour';
+    import ColorPicker from './ColorPicker.svelte';
     const strokeElements = [ "altGlyph", "circle", "ellipse", "line", "path", "polygon", "polyline", "rect", "text", "textPath", "tref", "tspan",];
 
     const borderProps = ["border-radius", "border-width", "border-color", "border-style",];
@@ -19,7 +20,7 @@
         "font-size": {type: "slider", min: 0, max: 30, suffix: 'px'},
         "font-weight": {type: "slider", min: 0, max: 500},
         "color": {type: "color"},
-        "stroke-width": {type: "slider", min: 1, max: 30, suffix: 'px'},
+        "stroke-width": {type: "slider", min: 0, max: 30, suffix: 'px'},
         'stroke': {type: "color"},
         'fill': {type: "color"},
         "stroke-dasharray": {type: "slider", min: 0, max: 30, suffix: 'px'},
@@ -33,11 +34,11 @@
         [typeStroke]: pathProps,
     };
 
-    export let elementToListen = null;
     export let getAdditionalElems = () => [];
+    let elementToListen = null;
+    let positionAnchor;
     let self;
     let helperElemWrapper;
-    let helperOverlays = [];
     let pathWithHoles = '';
     let pageDimensions = {width: 0, height: 0};
     let targetsToSearch = [];
@@ -68,8 +69,10 @@
 
     onMount(() => {
         hide();
+        elementToListen = self.parentNode
         document.body.appendChild(self);
         document.body.appendChild(helperElemWrapper);
+        document.body.appendChild(positionAnchor);
         udpatePageDimensions();
         window.addEventListener('resize', udpatePageDimensions);
     });
@@ -109,17 +112,21 @@
         return elems.reduce((matchedRulesByElem, el) => {
             const matchedRules = [];
             for (let i in sheets) {
-                const rules = sheets[i].cssRules;
-                for (let r in rules) {
-                    const selectorText = rules[r].selectorText;
-                    if (!selectorText || rules[r].selectorText.length > 50)
+                try {
+                    const rules = sheets[i].cssRules;
+                    for (let r in rules) {
+                        const selectorText = rules[r].selectorText;
+                        if (!selectorText || rules[r].selectorText.length > 50)
                         continue; // skip selectors too long
-                    if (selectorText.split(',').some(selector => selector === '*'))
+                        if (selectorText.split(',').some(selector => selector === '*'))
                         continue; // skip * selector
-                    if (el.matches(selectorText)) {
-                        matchedRules.push(rules[r]);
+                        if (el.matches(selectorText)) {
+                            matchedRules.push(rules[r]);
+                        }
                     }
-                }
+                } catch(err) {
+                    console.log('Style editor: Not able to access', sheets[i].ownerNode, 'sheet. Try CORS loading the sheet if you want to edit it.');
+                } 
             }
             matchedRules.push('inline');
             matchedRulesByElem.push(matchedRules);
@@ -156,6 +163,9 @@
     }
     
     function getTargetsAndRules(e) {
+        console.log(e.target)
+        if (e.target.classList.contains('overlay-over')) return overlayClicked();
+        else if (self.contains(e.target)) return;
         selectedElemIndex = 0;
         selectedRuleIndex = 0;
         selectedTypeIndex = 0;
@@ -164,10 +174,7 @@
         targetsToSearch = [e.target, ...getAdditionalElems(e.target)];
         allTypes = getEditableTypes(targetsToSearch);
         allRules = getMatchedCSSRules(targetsToSearch);
-        show();
-        self.style.display = "block";
-        self.style.left = e.pageX + 15 + "px";
-        self.style.top = e.pageY + 15 + "px";
+        show(e);
     }
 
     function overlayClicked() {
@@ -179,8 +186,26 @@
         helperElemWrapper.style.display = "none";
     }
 
-    function show() {
+    function show(e) {
         self.style.display = "block";
+        let x = e.pageX + 15, y =  e.pageY + 15;
+        console.log(x, y, pageDimensions);
+        if (x + 250 > pageDimensions.width) {
+            x = pageDimensions.width - 300;
+        }
+        if (y + 400 > pageDimensions.height) {
+            y = pageDimensions.width - 450;
+        }
+        self.style.left = e.pageX + "px";
+        self.style.top = e.pageY + "px";
+        // self.style.left = x + "px";
+        // self.style.top = y + "px";
+        // const x = e.clientX + window.pageXOffset, y = e.clientY + window.pageYOffset;
+        // positionAnchor.style.left = x + 'px';
+        // positionAnchor.style.top = y + 'px';
+        // createPopper(positionAnchor, self, {
+        //     placement: 'bottom-start'
+        // });
         helperElemWrapper.style.display = "block";
     }
 
@@ -190,14 +215,10 @@
         if (currentRule === 'inline') matching = [currentElement];
         else {
             const selector = currentRule.selectorText.replace(/(:hover)|:focus/g, '');
-            matching = document.querySelectorAll(selector);
+            matching = Array.from(document.querySelectorAll(selector));
         }
-        helperOverlays = [];
-        for (const el of matching) {
-            const rect = getBoundingBoxInfos(el, 10);
-            helperOverlays.push(rect);
-        }
-        computeContours();
+        const boundingBoxes = matching.map(el => getBoundingBoxInfos(el, 10));
+        pathWithHoles = computeContours(boundingBoxes, pageDimensions);
     }
 
     function getBoundingBoxInfos(el, padding = 0) {
@@ -212,17 +233,19 @@
         };
     }
 
-    function _updateCssRule(cssPropName, val, suffix) {
+    function _updateCssRule(cssPropName, val, suffix, target) {
         const finalValue = suffix ? val + suffix : val;
         if (isInline) {
             const style = currentElement.style; // do not trigger reactivity on currentElement
             style[cssPropName] = finalValue;
         }
         else currentRule.style.setProperty(cssPropName, finalValue);
+        if (target && target.nextElementSibling.classList.contains('current-value')) {
+            target.nextElementSibling.innerHTML = finalValue;
+        }
         updateHelpers();
     } 
     const updateCssRule = debounce(_updateCssRule, 100);
-    
 
     let propTypeToSelectedIndex = {slider: 0, color: 0, select:0};
     function updateChangedCssProp(propType, e) {
@@ -244,67 +267,26 @@
         }, '#');
     }
 
-    // type one of: "number", "rgb", "font"
+    // type one of: "number", "rgb", "font", "raw"
+    function parsePropvalue(value, type="number") {
+        if (type=="raw") return value;
+        if (type == "number" && value.match(/[0-9]+(px)|(em)|(rem)/)) return parseInt(value);
+        if (type == "rgb" && (value.includes('rgb') || value[0] == "#")) return cssRgbToHex(value);
+        return value
+    }
+
     function getComputedPropValue(el, cssProp, type="number") {
         let currentStyleValue = currentRule?.style?.[cssProp];
         if (!currentStyleValue) {
             const computed = getComputedStyle(el);
             currentStyleValue = computed[cssProp];
         }
-        if (type == "number" && currentStyleValue.match(/[0-9]+px/)) return parseInt(currentStyleValue);
-        if (type == "rgb" && (currentStyleValue.includes('rgb') || currentStyleValue[0] == "#")) return cssRgbToHex(currentStyleValue);
-        return currentStyleValue
-    }
-    function pointInBox(p, box) {
-        return !(p.x < box.left || p.x > box.right || p.y > box.bottom || p.y < box.top)
+        return parsePropvalue(currentStyleValue, type);
     }
     
-    function pointInBoxes(point, boxes) {
-        for (const box of boxes){
-            if (pointInBox(point, box)) return true;
-        }
-        return false;
-    }
-    function computeContours() {
-        const minX = Math.min(...helperOverlays.map(rect => rect.left));
-        const minY = Math.min(...helperOverlays.map(rect => rect.top));
-        const offsetBoxes = helperOverlays.map(rect => {
-            rect.left = rect.left - minX;
-            rect.right = rect.right - minX;
-            rect.top = rect.top - minY;
-            rect.bottom = rect.bottom - minY;
-            return rect;
-        });
-        offsetBoxes.sort((a, b) => {
-            if (a.left > b.left) return 1;
-            if (a.left < b.left) return -1;
-            return 0;
-        });
-        const maxX = Math.ceil(Math.max(...offsetBoxes.map(rect => rect.right)));
-        const maxY = Math.ceil(Math.max(...offsetBoxes.map(rect => rect.bottom)));
-        const downscaleFactor = 10;
-        const resX = Math.ceil(maxX / downscaleFactor);
-        const resY = Math.ceil(maxY / downscaleFactor);
-        const values = new Array(resX * resY); // one coordinate per pixel
-        for (let j = 0, k = 0; j < resY; ++j) {
-            for (let i = 0; i < resX; ++i, ++k) {
-                values[k] = pointInBoxes({x: i * downscaleFactor, y: j * downscaleFactor}, offsetBoxes) ? 1 : 0;
-            }
-        }
-        const contours = d3.contours().size([resX, resY]).thresholds([1])(values);
-        const projection = d3g.geoIdentity().fitExtent([[minX, minY], [minX + maxX, minY + maxY]], contours[0]);
-        const path = d3g.geoPath().projection(projection);
-        const defineRectangleClockWise = (width, height, top = 0, left = 0) => {
-            return `M${left} ${top} h${width} v${height} h-${width}z`
-        }
-        const defineRectangleAntiClockWise = (width, height, top = 0, left = 0) => {
-            return `M${left} ${top} v${height} h${width} v-${height}z`
-        }
-        let _pathWithHoles = defineRectangleAntiClockWise(pageDimensions.width, pageDimensions.height);
-        pathWithHoles = `${_pathWithHoles} ${path(contours[0])}`;
-    }
 </script>
 
+<div bind:this={positionAnchor} style="position: absolute;"> </div>
 <svg bind:this={helperElemWrapper} class="editor-helper-wrapper" 
 version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
 width={pageDimensions.width} height={pageDimensions.height}
@@ -359,11 +341,12 @@ on:click={overlayClicked}>
                     {/if}
                     {#if propType === 'slider'}
                     <!-- {(console.log(renderedDef), '')} -->
-                        <RangeSlider min={renderedDef.min} 
-                            max={renderedDef.max} 
-                            values={[getComputedPropValue(currentElement, renderedDef.name, 'number')]}
-                            float 
-                            on:change={(e) => updateCssRule(renderedDef.name, e.detail.value, renderedDef.suffix)}/>
+                        {@const propValue = getComputedPropValue(currentElement, renderedDef.name, 'raw') }
+                        <input type=range value={parsePropvalue(propValue, 'number')}
+                        min={renderedDef.min} 
+                        max={renderedDef.max} 
+                        on:change={(e) => updateCssRule(renderedDef.name, e.target.value, renderedDef.suffix, e.target)}/>
+                        <span class="current-value"> {propValue} </span> 
                     {:else if propType == 'select'}
                         <select on:change={(e) => updateCssRule(renderedDef.name, e.target.value)}>
                             {#each renderedDef.choices() as choice}
@@ -382,92 +365,3 @@ on:click={overlayClicked}>
         {/if}
     </div>
 </div>
-
-<style>
-    .editor-helper-wrapper {
-        z-index: 9999998;
-        position: absolute;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-    }
-    .overlay-over {
-        fill: #000000A0;
-        clip-path: url(#overlay-clip);
-        pointer-events: painted;
-    }
-    .wrapper {
-        font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;
-        font-size: 10px;
-        z-index: 9999999;
-        position: absolute;
-        background-color: #edf2f7;
-        max-width: 250px;
-        border-radius: 5px;
-        box-shadow: 0px 8px 17px 2px rgba(0, 0, 0, 0.487);
-    }
-    .wrapper .select-tab {
-        display: flex;
-        align-items: center;
-        background-color: #edf2f7;
-        padding: 5px 0 5px 0;
-        margin: 0 10px 0 10px;
-        border-bottom: 1px solid #dee2e6;
-    }
-    .wrapper .select-tab > span {
-        text-overflow: ellipsis;
-        overflow: hidden;
-        white-space: nowrap;
-        min-width: 50px;
-        padding: 3px;
-        text-align: center;
-        color: #718096;
-        cursor: pointer;
-    }
-    .wrapper .select-tab > b {
-        margin-right: 5px;
-        color: #5d5d5d;
-    }
-    .inner-wrapper {
-        position: relative;
-    }
-    .editor {
-        padding: 5px;
-    }
-    .editor .prop-section {
-        display: flex;
-        align-items: center;
-        margin: 5px 0;
-    }
-    .editor .prop-section > span {
-        margin: 0 5px;
-    }
-    .editor .prop-section :first-child {
-        color: #5d5d5d;
-        font-weight: bold;
-    }
-    .close-button {
-        position: absolute;
-        top: -7px;
-        right: -7px;
-        background-color: #dbdbdb;
-        color: #818181;
-        width: 15px;
-        height: 15px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        border-radius: 3px;
-    }
-    :global(.rangeSlider) {
-        flex: 1 0 auto;
-    }
-    .wrapper .select-tab span.selected {
-        border-radius: 2px;
-        box-shadow: 0 1px 3px 0 rgba(0,0,0,.1),0 1px 2px 0 rgba(0,0,0,.06);
-        color: #0069d9;
-        background-color: white;
-    }
-
-</style>

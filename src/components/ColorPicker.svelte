@@ -1,9 +1,5 @@
-
-
-
-
 <script>
-    import Picker from 'vanilla-picker';
+    import Picker from 'vanilla-picker/csp';
     
     import { onMount, onDestroy } from 'svelte';
     
@@ -41,7 +37,6 @@
         if (!self) return;
         if (pickerElem) pickerElem.destroy();
         opts.onChange = _onChange;
-        console.log(self, value)
         pickerElem = new Picker({
             parent: self,
             color: value,

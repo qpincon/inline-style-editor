@@ -1,0 +1,147 @@
+.layout_default.picker_wrapper {
+    background: none;
+    box-shadow: none;
+    width: 17em;
+
+    .picker_done {
+        display: none;
+    }
+
+    .picker_slider,
+    .picker_selector {
+        padding: 0.5em;
+    }
+
+    .picker_editor input {
+        font-size: 0.7rem;
+    }
+}
+
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+/* Format forms */
+select {
+    font-size: inherit;
+    font-family: inherit;
+    padding: 0.5rem;
+    color: #212121;
+    background: white;
+    border: 1px solid #d8dae1;
+    border-radius: 5px;
+    box-shadow: none;
+    max-width: 100%;
+    display: inline-block;
+}
+
+input[type="range"] {
+    width: 100%;
+}
+
+/* Add arrow to drop-down */
+select:not([multiple]) {
+    background-image: linear-gradient(45deg, transparent 49%, #212121 51%),
+        linear-gradient(135deg, #212121 51%, transparent 49%);
+    background-position: calc(100% - 15px), calc(100% - 10px);
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding: 5px 25px 5px 5px;
+}
+
+.editor-helper-wrapper {
+    z-index: 9999998;
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.overlay-over {
+    fill: #000000A0;
+    clip-path: url(#overlay-clip);
+    pointer-events: painted;
+}
+
+.wrapper {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 10px;
+    z-index: 9999999;
+    position: absolute;
+    background-color: #edf2f7;
+    max-width: 250px;
+    border-radius: 5px;
+    box-shadow: 0px 8px 17px 2px rgba(0, 0, 0, 0.487);
+}
+
+.wrapper .select-tab {
+    display: flex;
+    align-items: center;
+    background-color: #edf2f7;
+    padding: 5px 0 5px 0;
+    margin: 0 10px 0 10px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.wrapper .select-tab>span {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    min-width: 50px;
+    padding: 3px;
+    text-align: center;
+    color: #718096;
+    cursor: pointer;
+}
+
+.wrapper .select-tab>b {
+    margin-right: 5px;
+    color: #5d5d5d;
+}
+
+.inner-wrapper {
+    position: relative;
+}
+
+.editor {
+    padding: 5px;
+}
+
+.editor .prop-section {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.editor .prop-section>span {
+    margin: 0 5px;
+}
+
+.editor .prop-section :first-child {
+    color: #5d5d5d;
+    font-weight: bold;
+}
+
+.close-button {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    background-color: #dbdbdb;
+    color: #818181;
+    width: 15px;
+    height: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.wrapper .select-tab span.selected {
+    border-radius: 2px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, .1), 0 1px 2px 0 rgba(0, 0, 0, .06);
+    color: #0069d9;
+    background-color: white;
+}
