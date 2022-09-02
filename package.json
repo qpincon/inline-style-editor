@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Update CSS rules or add inline style to elements visualy",
   "scripts": {
-    "serve": "webpack --watch --mode=development"
+    "build": "rollup --config",
+    "dev": "rollup --config --sourcemap --watch"
   },
   "author": "Quentin Pinçon",
   "license": "ISC",

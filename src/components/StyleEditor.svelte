@@ -6,9 +6,11 @@
     import debounce from 'lodash.debounce';
     import { computeContours } from '../util/boxesContour';
     import ColorPicker from './ColorPicker.svelte';
+    import { getFonts } from '../util/fonts';
     const strokeElements = [ "altGlyph", "circle", "ellipse", "line", "path", "polygon", "polyline", "rect", "text", "textPath", "tref", "tspan",];
 
-    const borderProps = ["border-radius", "border-width", "border-color", "border-style",];
+    const borderProps = ["border-radius", "border-width", "border-color", "border-style"];
+    const backgroundProps = ["background-color"];
     const fontProps = ["font-family", "font-size", "font-weight", "color"];
     const pathProps = ["stroke-width", "stroke", "stroke-dasharray", "fill"];
     const cssPropByType = {
@@ -24,51 +26,77 @@
         'stroke': {type: "color"},
         'fill': {type: "color"},
         "stroke-dasharray": {type: "slider", min: 0, max: 30, suffix: 'px'},
+        "background-color": {type: "color"},
     };
     const typeText = "text";
     const typeBorder = "border";
     const typeStroke = "stroke";
+    const typeBackground = "background";
     const propByType = {
         [typeText]: fontProps,
         [typeBorder]: borderProps,
         [typeStroke]: pathProps,
+        [typeBackground]: backgroundProps,
     };
 
     export let getAdditionalElems = () => [];
+    export let listenOnClick = false;
     let elementToListen = null;
     let positionAnchor;
     let self;
     let helperElemWrapper;
     let pathWithHoles = '';
-    let pageDimensions = {width: 0, height: 0};
+    let pageDimensions = { width: 0, height: 0 };
     let targetsToSearch = [];
-    let allTypes = []; // list of list of types (e.g color, border), for every target element
     let allRules = []; // list of list of CSS rules, for every target element
+    let allTypes = []; // list of list of types (e.g color, border), for every target element
     let selectedElemIndex = 0;
     let selectedRuleIndex = 0;
     let selectedTypeIndex = 0;
-
-    let propGroupedByType;
+    let propsByType; // propType -> {[props], selected} 
+    let allCurrentPropDefs = {}; // propName => selectorDef
+    let bringableToFront = []; // null = not bringable, true = bringable, false = was bringed
     $: {
         if (elementToListen !== null) {
             init();
         }
     }
+    $: currentElement = targetsToSearch[selectedElemIndex];
     $: currentRule = allRules[selectedElemIndex]?.[selectedRuleIndex];
-    $: isInline = selectedRuleIndex === (allRules[selectedElemIndex] || []).length - 1;
-    $: curType = allTypes[selectedElemIndex]?.[selectedTypeIndex];
+    // $: curType = allTypes[selectedElemIndex]?.[selectedTypeIndex];
+    let curType;
     $: {
-        if (currentRule){
-            propGroupedByType = groupByValue(pick(cssPropByType, propByType[curType]));
+        if (allTypes[selectedElemIndex]?.[selectedTypeIndex] !== curType) {
+            curType = allTypes[selectedElemIndex]?.[selectedTypeIndex];
+        };
+    }
+    $: {
+        if (curType && currentRule){
+            const _allCurrentPropDefs = pick(cssPropByType, propByType[curType]);
+            Object.keys(_allCurrentPropDefs).forEach(key => {
+                _allCurrentPropDefs[key].displayed = getComputedPropValue(currentElement, key, 'raw');
+                const propSelectType = _allCurrentPropDefs[key].type;
+                let retrieveType = 'number';
+                if (propSelectType === 'color') retrieveType = 'rgb';
+                else if (propSelectType === 'select') retrieveType = 'raw';
+                _allCurrentPropDefs[key].value = getComputedPropValue(currentElement, key, retrieveType);
+            });
+            
+            propsByType = Object.entries(_allCurrentPropDefs).reduce((byType, [propName, selectorDef]) => {
+                const selectorType = selectorDef.type;
+                if (!(selectorType in byType)) byType[selectorType] = {selected: 0, props: [propName]};
+                else byType[selectorType].props.push(propName);
+                return byType;
+            }, {});
+            allCurrentPropDefs = _allCurrentPropDefs;
         }
     }
-    $: currentElement = targetsToSearch[selectedElemIndex];
     $: {
         updateHelpers(currentRule);
     }
-
+    
     onMount(() => {
-        hide();
+        close();
         elementToListen = self.parentNode
         document.body.appendChild(self);
         document.body.appendChild(helperElemWrapper);
@@ -79,22 +107,11 @@
 
     onDestroy(() => {
         window.removeEventListener('resize', udpatePageDimensions);
-        elementToListen.removeEventListener("click", getTargetsAndRules);
+        if(listenOnClick) elementToListen.removeEventListener("click", getTargetsAndRules);
     })
 
     function getFontFamilies() {
-        return ["Arial"];
-    }
-
-    // get an object with possible duplicated values, returns groupKey -> [vals]
-    function groupByValue(obj, groupKey = 'type') {
-        return Object.entries(obj).reduce((acc, [key, val]) => {
-            const type = val[groupKey];
-            val.name = key;
-            if (type in acc) acc[type].push(val);
-            else acc[type] = [val];
-            return acc;
-        }, {});
+        return getFonts();
     }
 
     function getRuleNames(rules) {
@@ -107,10 +124,11 @@
         });
     }
 
+    let warningDisplayed = new Set();
     function getMatchedCSSRules(elems) {
         const sheets = document.styleSheets;
         return elems.reduce((matchedRulesByElem, el) => {
-            const matchedRules = [];
+            const matchedRules = ['inline'];
             for (let i in sheets) {
                 try {
                     const rules = sheets[i].cssRules;
@@ -125,24 +143,15 @@
                         }
                     }
                 } catch(err) {
-                    console.log('Style editor: Not able to access', sheets[i].ownerNode, 'sheet. Try CORS loading the sheet if you want to edit it.');
+                    if (!warningDisplayed.has(i)) {
+                        console.log('Style editor: Not able to access', sheets[i].ownerNode, 'sheet. Try CORS loading the sheet if you want to edit it.');
+                        warningDisplayed.add(i);
+                    }
                 } 
             }
-            matchedRules.push('inline');
             matchedRulesByElem.push(matchedRules);
             return matchedRulesByElem;
         }, []);
-    }
-    function getStyle(selector) {
-        const sheets = document.styleSheets;
-        for (let i in sheets) {
-            const rules = sheets[i].cssRules;
-            for (let r in rules) {
-                if (r.selectorText === selector) {
-                    console.log(r);
-                }
-            }
-        }
     }
 
     function getEditableTypes(elems) {
@@ -151,62 +160,69 @@
             if (elem.firstChild && elem.firstChild.nodeType === 3) { // Node.TEXT_NODE
                 types.push(typeText);
             }
-            if (strokeElements.includes(elem.tagName.toLowerCase())) types.push(typeStroke);
-            else types.push(typeBorder);
+            const elemTagName = elem.tagName.toLowerCase();
+            let bringable = false;
+            if (strokeElements.includes(elemTagName)) {
+                types.push(typeStroke);
+                const parentTag = elem.parentElement.tagName.toLowerCase();
+                if (parentTag === 'g' && elem.previousElementSibling && elem.previousElementSibling.tagName.toLowerCase() == elemTagName) {
+                    bringable = true;
+                }
+            }
+            else {
+                types.push(typeBorder);
+                types.push(typeBackground);
+            }
+            if (bringable) bringableToFront.push(true);
+            else bringableToFront.push(null);
             typesByElem.push(types)
             return typesByElem;
         }, []);
     }
 
     function init() {
-        elementToListen.addEventListener("click", getTargetsAndRules);
+        if(listenOnClick) elementToListen.addEventListener("click", _open);
     }
     
-    function getTargetsAndRules(e) {
-        console.log(e.target)
-        if (e.target.classList.contains('overlay-over')) return overlayClicked();
-        else if (self.contains(e.target)) return;
+    function _open(e) {
+        open(e.target, e.pageX, e.pageY);
+    }
+
+    export function open(el, x, y) {
+        if (el.classList.contains('overlay-over')) return overlayClicked();
+        else if (self.contains(el)) return;
         selectedElemIndex = 0;
         selectedRuleIndex = 0;
         selectedTypeIndex = 0;
+        bringableToFront = [];
         allTypes = [];
         allRules = [];
-        targetsToSearch = [e.target, ...getAdditionalElems(e.target)];
+        targetsToSearch = [el, ...getAdditionalElems(el)];
         allTypes = getEditableTypes(targetsToSearch);
         allRules = getMatchedCSSRules(targetsToSearch);
-        show(e);
+        if (x && y) show(x, y);
+        else {
+            const rect = getBoundingBoxInfos(el, 15);
+            show(rect.left, rect.top);
+        }
     }
 
-    function overlayClicked() {
-        hide();
-    }
-
-    function hide() {
+    export function close() {
         self.style.display = "none";
         helperElemWrapper.style.display = "none";
     }
 
-    function show(e) {
-        self.style.display = "block";
-        let x = e.pageX + 15, y =  e.pageY + 15;
-        console.log(x, y, pageDimensions);
-        if (x + 250 > pageDimensions.width) {
-            x = pageDimensions.width - 300;
-        }
-        if (y + 400 > pageDimensions.height) {
-            y = pageDimensions.width - 450;
-        }
-        self.style.left = e.pageX + "px";
-        self.style.top = e.pageY + "px";
-        // self.style.left = x + "px";
-        // self.style.top = y + "px";
-        // const x = e.clientX + window.pageXOffset, y = e.clientY + window.pageYOffset;
-        // positionAnchor.style.left = x + 'px';
-        // positionAnchor.style.top = y + 'px';
-        // createPopper(positionAnchor, self, {
-        //     placement: 'bottom-start'
-        // });
+    function overlayClicked() {
+        close();
+    }
+   
+    function show(x, y) {
+        x = (x + 260 > pageDimensions.width) ? pageDimensions.width - 300 : x + 10;
+        y = (y + 410 > pageDimensions.height) ? pageDimensions.height - 450 : y + 10;
+        self.style.left = x + "px";
+        self.style.top = y + "px";
         helperElemWrapper.style.display = "block";
+        self.style.display = "block";
     }
 
     function updateHelpers() {
@@ -233,25 +249,18 @@
         };
     }
 
-    function _updateCssRule(cssPropName, val, suffix, target) {
+    function _updateCssRule(cssPropName, val, suffix) {
         const finalValue = suffix ? val + suffix : val;
-        if (isInline) {
+        if (currentRule === 'inline') {
             const style = currentElement.style; // do not trigger reactivity on currentElement
             style[cssPropName] = finalValue;
         }
         else currentRule.style.setProperty(cssPropName, finalValue);
-        if (target && target.nextElementSibling.classList.contains('current-value')) {
-            target.nextElementSibling.innerHTML = finalValue;
-        }
+        allCurrentPropDefs[cssPropName].value = val;
+        allCurrentPropDefs[cssPropName].displayed = finalValue;
         updateHelpers();
     } 
     const updateCssRule = debounce(_updateCssRule, 100);
-
-    let propTypeToSelectedIndex = {slider: 0, color: 0, select:0};
-    function updateChangedCssProp(propType, e) {
-        const val = parseInt(e.target.value);
-        propTypeToSelectedIndex[propType] = val;
-    }
     
     function udpatePageDimensions(){
         pageDimensions = {width: document.body.scrollWidth, height: document.body.scrollHeight};
@@ -270,7 +279,7 @@
     // type one of: "number", "rgb", "font", "raw"
     function parsePropvalue(value, type="number") {
         if (type=="raw") return value;
-        if (type == "number" && value.match(/[0-9]+(px)|(em)|(rem)/)) return parseInt(value);
+        if (type == "number" && /[0-9]+(px)|(em)|(rem)/.test(value)) return parseInt(value);
         if (type == "rgb" && (value.includes('rgb') || value[0] == "#")) return cssRgbToHex(value);
         return value
     }
@@ -282,6 +291,11 @@
             currentStyleValue = computed[cssProp];
         }
         return parsePropvalue(currentStyleValue, type);
+    }
+
+    function bringToFront() {
+        bringableToFront[selectedElemIndex] = false;
+        currentElement.parentNode.appendChild(currentElement);
     }
     
 </script>
@@ -299,12 +313,14 @@ on:click={overlayClicked}>
 
 <div class="wrapper" bind:this={self}>
     <div class="inner-wrapper">
-        <div class="close-button" on:click={hide}>x</div>
+        <div class="close-button" on:click={close}>x</div>
         {#if targetsToSearch.length > 1}
         <div class="select-tab">
             <b> Elem </b>
             {#each targetsToSearch as target, elemIndex}
-                <span class:selected={selectedElemIndex === elemIndex} on:click={() => {selectedElemIndex = elemIndex;}}> Elem {elemIndex} </span>
+                <span class:selected={selectedElemIndex === elemIndex} on:click={() => {selectedElemIndex = elemIndex; selectedRuleIndex = 0;}}>
+                    Elem {elemIndex}
+                </span>
             {/each}
         </div>
         {/if}
@@ -325,42 +341,43 @@ on:click={overlayClicked}>
         </div>
         {#if allTypes[selectedElemIndex]}
         <div class="editor"> 
-            {#each Object.entries(propGroupedByType) as [propType, propDefs]}
-            {@const renderedDef = propDefs[propTypeToSelectedIndex[propType]] }
+            {#each Object.entries(propsByType) as [propType, choices]}
+            {@const selectedName = choices.props[choices.selected]}
                 <div class="prop-section">
-                <!-- {(console.log(propType, propDefs, propTypeToSelectedIndex), '')} -->
-                    
-                    {#if propDefs.length > 1}
-                        <div> <select on:change="{(e) => updateChangedCssProp(propType, e)}">
-                            {#each propDefs as propDef, i}
-                                <option value="{i}"> {propDef.name} </option>
+                    {#if choices.props.length > 1}
+                        <div> <select on:change="{(e) => choices.selected = e.target.value}">
+                            {#each choices.props as propName, i}
+                                <option selected={i === choices.selected} value="{i}"> {propName} </option>
                             {/each}
                         </select> </div>
                     {:else}
-                        <span> { renderedDef.name } </span>
+                        <span> { selectedName } </span>
                     {/if}
                     {#if propType === 'slider'}
-                    <!-- {(console.log(renderedDef), '')} -->
-                        {@const propValue = getComputedPropValue(currentElement, renderedDef.name, 'raw') }
-                        <input type=range value={parsePropvalue(propValue, 'number')}
-                        min={renderedDef.min} 
-                        max={renderedDef.max} 
-                        on:change={(e) => updateCssRule(renderedDef.name, e.target.value, renderedDef.suffix, e.target)}/>
-                        <span class="current-value"> {propValue} </span> 
+                        <input type=range value={allCurrentPropDefs[selectedName].value}
+                        min={allCurrentPropDefs[selectedName].min} 
+                        max={allCurrentPropDefs[selectedName].max} 
+                        on:change={(e) => updateCssRule(selectedName, e.target.value, allCurrentPropDefs[selectedName].suffix, e.target)}/>
+                        <span class="current-value"> { allCurrentPropDefs[selectedName].displayed } </span> 
                     {:else if propType == 'select'}
-                        <select on:change={(e) => updateCssRule(renderedDef.name, e.target.value)}>
-                            {#each renderedDef.choices() as choice}
-                                <option selected={choice == getComputedPropValue(currentElement, renderedDef.name, 'font') || null}> {choice} </option>
+                        <select on:change={(e) => updateCssRule(selectedName, e.target.value)}>
+                            {#each allCurrentPropDefs[selectedName].choices() as choice}
+                                <option selected={choice == allCurrentPropDefs[selectedName].value || null}> {choice} </option>
                             {/each}
                         </select>
                     {:else if propType == 'color'}
                         <ColorPicker 
-                            value={getComputedPropValue(currentElement, renderedDef.name, 'rgb')}
-                            onChange={(color => updateCssRule(renderedDef.name, color))}
+                            value={allCurrentPropDefs[selectedName].value}
+                            onChange={(color => updateCssRule(selectedName, color))}
                         /> 
                     {/if}
                 </div>
             {/each}
+            {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
+                <div class="btn" class:active="{bringableToFront[selectedElemIndex] === true}" on:click="{bringToFront}"> 
+                    Bring to front
+                </div>
+            {/if}
         </div>
         {/if}
     </div>

@@ -13,7 +13,8 @@ const name = pkg.name
 
 export default [
     {
-        input: 'src/components/StyleEditor.svelte',
+        input: 'src/index.js',
+        // input: 'src/components/StyleEditor.svelte',
         output: [
         {
             file: pkg.module,
@@ -23,7 +24,7 @@ export default [
             file: pkg.main,
             format: 'umd',
             name: name,
-            plugins: [terser()]
+            plugins: [terser()],
         }],
         plugins: [
             svelte(),

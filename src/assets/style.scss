@@ -124,6 +124,20 @@ select:not([multiple]) {
     font-weight: bold;
 }
 
+.editor .btn {
+    &.active {
+        background-color: #4d84bf;
+    }
+    margin: 5px;
+    background-color: #3333330d;
+    border-radius: 4px;
+    border: 1px solid #d8dae1;
+    color: #333333;
+    cursor: pointer;
+    display: inline-block;
+    padding: 5px;
+}
+
 .close-button {
     position: absolute;
     top: -7px;
