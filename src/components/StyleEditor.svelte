@@ -298,7 +298,7 @@
 </script>
 
 <div bind:this={positionAnchor} style="position: absolute;"> </div>
-<svg bind:this={helperElemWrapper} class="editor-helper-wrapper" 
+<svg bind:this={helperElemWrapper} class="ise-helper-wrapper" 
 version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
 width={pageDimensions.width} height={pageDimensions.height}
 on:click={overlayClicked}>
@@ -308,74 +308,72 @@ on:click={overlayClicked}>
     <rect y="0" x="0" height="100%" width="100%" class="overlay-over" />
 </svg>
 
-<div class="wrapper" bind:this={self}>
-    <div class="inner-wrapper">
-        <div class="close-button" on:click={close}>x</div>
-        {#if targetsToSearch.length > 1}
-        <div class="select-tab">
-            <b> Elem </b>
-            {#each targetsToSearch as target, elemIndex}
-                <span class:selected={selectedElemIndex === elemIndex} on:click={() => {selectedElemIndex = elemIndex; selectedRuleIndex = 0;}}>
-                    Elem {elemIndex}
-                </span>
-            {/each}
-        </div>
-        {/if}
-        <div class="select-tab">
-            <b> Rule: </b>
-            {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
-                <span 
-                    class:selected="{selectedRuleIndex === ruleIndex}" 
-                    on:click="{() => {selectedRuleIndex = ruleIndex;}}"
-                >  {ruleName}</span>
-            {/each}
-        </div>
-        <div class="select-tab">
-            <b> Property type: </b>
-            {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
-                <span class:selected="{selectedTypeIndex === typeIndex}" on:click="{() => {selectedTypeIndex = typeIndex;}}"> {type} </span>
-            {/each}
-        </div>
-        {#if allTypes[selectedElemIndex]}
-        <div class="editor"> 
-            {#each Object.entries(propsByType) as [propType, choices]}
-            {@const selectedName = choices.props[choices.selected]}
-                <div class="prop-section">
-                    {#if choices.props.length > 1}
-                        <div> <select on:change="{(e) => choices.selected = e.target.value}">
-                            {#each choices.props as propName, i}
-                                <option selected={i === choices.selected} value="{i}"> {propName} </option>
-                            {/each}
-                        </select> </div>
-                    {:else}
-                        <span> { selectedName } </span>
-                    {/if}
-                    {#if propType === 'slider'}
-                        <input type=range value={allCurrentPropDefs[selectedName].value}
-                        min={allCurrentPropDefs[selectedName].min} 
-                        max={allCurrentPropDefs[selectedName].max} 
-                        on:change={(e) => updateCssRule(selectedName, e.target.value, allCurrentPropDefs[selectedName].suffix, e.target)}/>
-                        <span class="current-value"> { allCurrentPropDefs[selectedName].displayed } </span> 
-                    {:else if propType == 'select'}
-                        <select on:change={(e) => updateCssRule(selectedName, e.target.value)}>
-                            {#each allCurrentPropDefs[selectedName].choices() as choice}
-                                <option selected={choice == allCurrentPropDefs[selectedName].value || null}> {choice} </option>
-                            {/each}
-                        </select>
-                    {:else if propType == 'color'}
-                        <ColorPicker 
-                            value={allCurrentPropDefs[selectedName].value}
-                            onChange={(color => updateCssRule(selectedName, color))}
-                        /> 
-                    {/if}
-                </div>
-            {/each}
-            {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
-                <div class="btn" class:active="{bringableToFront[selectedElemIndex] === true}" on:click="{bringToFront}"> 
-                    Bring to front
-                </div>
-            {/if}
-        </div>
+<div class="ise" bind:this={self}>
+    <div class="close-button" on:click={close}>x</div>
+    {#if targetsToSearch.length > 1}
+    <div class="select-tab">
+        <b> Elem </b>
+        {#each targetsToSearch as target, elemIndex}
+            <span class:selected={selectedElemIndex === elemIndex} on:click={() => {selectedElemIndex = elemIndex; selectedRuleIndex = 0;}}>
+                Elem {elemIndex}
+            </span>
+        {/each}
+    </div>
+    {/if}
+    <div class="select-tab">
+        <b> Rule: </b>
+        {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
+            <span title={ruleName}
+                class:selected="{selectedRuleIndex === ruleIndex}" 
+                on:click="{() => {selectedRuleIndex = ruleIndex;}}"
+            >  {ruleName}</span>
+        {/each}
+    </div>
+    <div class="select-tab">
+        <b> Property type: </b>
+        {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
+            <span class:selected="{selectedTypeIndex === typeIndex}" on:click="{() => {selectedTypeIndex = typeIndex;}}"> {type} </span>
+        {/each}
+    </div>
+    {#if allTypes[selectedElemIndex]}
+    <div class="editor"> 
+        {#each Object.entries(propsByType) as [propType, choices]}
+        {@const selectedName = choices.props[choices.selected]}
+            <div class="prop-section">
+                {#if choices.props.length > 1}
+                    <div> <select on:change="{(e) => choices.selected = e.target.value}">
+                        {#each choices.props as propName, i}
+                            <option selected={i === choices.selected} value="{i}"> {propName} </option>
+                        {/each}
+                    </select> </div>
+                {:else}
+                    <span> { selectedName } </span>
+                {/if}
+                {#if propType === 'slider'}
+                    <input type=range value={allCurrentPropDefs[selectedName].value}
+                    min={allCurrentPropDefs[selectedName].min} 
+                    max={allCurrentPropDefs[selectedName].max} 
+                    on:change={(e) => updateCssRule(selectedName, e.target.value, allCurrentPropDefs[selectedName].suffix, e.target)}/>
+                    <span class="current-value"> { allCurrentPropDefs[selectedName].displayed } </span> 
+                {:else if propType == 'select'}
+                    <select on:change={(e) => updateCssRule(selectedName, e.target.value)}>
+                        {#each allCurrentPropDefs[selectedName].choices() as choice}
+                            <option selected={choice == allCurrentPropDefs[selectedName].value || null}> {choice} </option>
+                        {/each}
+                    </select>
+                {:else if propType == 'color'}
+                    <ColorPicker 
+                        value={allCurrentPropDefs[selectedName].value}
+                        onChange={(color => updateCssRule(selectedName, color))}
+                    /> 
+                {/if}
+            </div>
+        {/each}
+        {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
+            <div class="btn" class:active="{bringableToFront[selectedElemIndex] === true}" on:click="{bringToFront}"> 
+                Bring to front
+            </div>
         {/if}
     </div>
+    {/if}
 </div>
