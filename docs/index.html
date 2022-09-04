@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Viz maker</title>
-    <link rel="stylesheet" type="text/css" href="../dist/inline-style-editor.css" />
+    <link rel="stylesheet" type="text/css" href="inline-style-editor.css" />
     <style>
         .navbar {
             padding: 1rem 2rem;
@@ -329,44 +329,24 @@
     </svg>
 
     <!-- <script src="index.js"></script> -->
-    <script src="../dist/inline-style-editor.js"></script>
+    <script src="inline-style-editor.js"></script>
     <script>
         const editor = new InlineStyleEditor(
             {
-               listenOnClick: true,
+                getAdditionalElems: (el) => {
+                    if (el.classList.contains('adm1')) {
+                        const parentCountry = el.parentNode.getAttribute('id').replace('-adm1', '');
+                        const countryElem = document.getElementById(parentCountry);
+                        return [countryElem];
+                    }
+                    return [];
+                }
             }
         );
-        // document.body.addEventListener('click', (e) => {
-        //     const target = e.target;
-        //     editor.open(target, e.pageX, e.pageY);
-        // });
-        // const editor = new InlineStyleEditor(
-        //     {
-        //         getAdditionalElems: (el) => {
-        //             if (el.classList.contains('adm1')) {
-        //                 const parentCountry = el.parentNode.getAttribute('id').replace('-adm1', '');
-        //                 const countryElem = document.getElementById(parentCountry);
-        //                 return [countryElem];
-        //             }
-        //             return [];
-        //         }
-        //     }
-        // );
-        // document.body.addEventListener('click', (e) => {
-        //     const target = e.target;
-        //     editor.open(target, e.pageX, e.pageY);
-        // }); 
-        // document.getElementById('ITA-adm1').addEventListener('mouseover', (e) => {
-        //     toFront(e.target);
-        // });
-        function toFront(el) {
-            setTimeout(() => {
-                var parent = el.parentNode;
-                if (parent && parent.lastChild !== el) {
-                    parent.appendChild(el);
-                }
-            }, 0)
-    }
+        document.body.addEventListener('click', (e) => {
+            const target = e.target;
+            editor.open(target, e.pageX, e.pageY);
+        }); 
     </script>
 </body>
 

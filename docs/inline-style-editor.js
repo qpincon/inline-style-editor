@@ -1,0 +1,1 @@
+../dist/inline-style-editor.js

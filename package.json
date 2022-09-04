@@ -31,7 +31,6 @@
     "d3-geo": "^3.0.1",
     "lodash.debounce": "^4.0.8",
     "lodash.pick": "^4.4.0",
-    "mini-css-extract-plugin": "^2.6.1",
     "parse-svg-path": "^0.1.2",
     "svelte": "^3.49.0",
     "vanilla-picker": "^2.12.1"
