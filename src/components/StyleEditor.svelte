@@ -91,9 +91,6 @@
             allCurrentPropDefs = _allCurrentPropDefs;
         }
     }
-    $: {
-        updateHelpers(currentRule);
-    }
     
     onMount(() => {
         close();

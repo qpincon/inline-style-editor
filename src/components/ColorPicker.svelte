@@ -17,6 +17,7 @@
         pickerElem.setColor(rgbaString);
     }
     function setValue(val) {
+        if (val === value) return;
         onChange(val, value)
         value = val;
     }

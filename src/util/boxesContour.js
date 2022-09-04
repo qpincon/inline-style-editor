@@ -13,7 +13,37 @@ function pointInBoxes(point, boxes) {
     return false;
 }
 
+function defineRectangleClockWise({width, height, top = 0, left = 0}) {
+    return `M${left} ${top} h${width} v${height} h-${width}z`
+}
+
+function defineRectangleAntiClockWise({width, height, top = 0, left = 0}) {
+    return `M${left} ${top} v${height} h${width} v-${height}z`
+}
+
+function boxOverlap(box1, box2) {
+    return (box1.right >= box2.left && box2.right >= box1.left) 
+        && (box1.bottom >= box2.top && box2.bottom >= box1.top)
+}
+
+function boxesHaveOverlap(boundingBoxes) {
+    for (let i = 0; i < boundingBoxes.length - 1; ++i) {
+        const ref = boundingBoxes[i];
+        for (let j = i + 1; j < boundingBoxes.length; ++j) {
+            if (boxOverlap(ref, boundingBoxes[j])) return true;
+        }
+    }
+    return false;
+}
+
 function computeContours(boundingBoxes, pageDimensions) {
+    let _pathWithHoles = defineRectangleAntiClockWise({width: pageDimensions.width, height: pageDimensions.height});
+    if (boundingBoxes.length < 10 && !boxesHaveOverlap(boundingBoxes)) {
+        for (const bbox of boundingBoxes) {
+            _pathWithHoles = `${_pathWithHoles} ${defineRectangleClockWise(bbox)}`;
+        }
+        return _pathWithHoles;
+    }
     const minX = Math.min(...boundingBoxes.map(rect => rect.left));
     const minY = Math.min(...boundingBoxes.map(rect => rect.top));
     const offsetBoxes = boundingBoxes.map(rect => {
@@ -44,13 +74,8 @@ function computeContours(boundingBoxes, pageDimensions) {
     const computedContours = contours().size([resX, resY]).thresholds([1])(values);
     const projection = geoIdentity().fitExtent([[minX, minY], [minX + maxX, minY + maxY]], computedContours[0]);
     const path = geoPath().projection(projection);
-    const defineRectangleClockWise = (width, height, top = 0, left = 0) => {
-        return `M${left} ${top} h${width} v${height} h-${width}z`
-    }
-    const defineRectangleAntiClockWise = (width, height, top = 0, left = 0) => {
-        return `M${left} ${top} v${height} h${width} v-${height}z`
-    }
-    const _pathWithHoles = defineRectangleAntiClockWise(pageDimensions.width, pageDimensions.height);
+    
+    
     return `${_pathWithHoles} ${simplifyLinesPath(path(computedContours[0]))}`;
 }
 
