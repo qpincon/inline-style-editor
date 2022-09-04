@@ -1,4 +1,4 @@
-import StyleEditor from './components/StyleEditor.svelte';
+import StyleEditor from './components/InlineStyleEditor.svelte';
 
 export default class InlineStyleEditor {
     constructor(options) {
