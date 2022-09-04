@@ -14,7 +14,6 @@ const name = pkg.name
 export default [
     {
         input: 'src/index.js',
-        // input: 'src/components/StyleEditor.svelte',
         output: [
         {
             file: pkg.module,

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Update CSS rules or add inline style to elements visualy",
   "scripts": {
-    "build": "rollup --config",
+    "build": "rollup --config; cp dist/inline-style-editor.js docs/inline-style-editor.js; cp dist/inline-style-editor.css docs/inline-style-editor.css",
     "dev": "rollup --config --sourcemap --watch"
   },
   "author": "Quentin Pinçon",
