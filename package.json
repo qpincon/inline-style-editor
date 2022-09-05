@@ -1,6 +1,6 @@
 {
   "name": "inline-style-editor",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Update CSS rules or add inline style to elements visualy",
   "scripts": {
     "build": "rollup --config",
@@ -28,7 +28,6 @@
   },
   "dependencies": {
     "d3-contour": "^4.0.0",
-    "d3-geo": "^3.0.1",
     "inline-style-editor": "^1.0.0",
     "lodash.debounce": "^4.0.8",
     "lodash.pick": "^4.4.0",

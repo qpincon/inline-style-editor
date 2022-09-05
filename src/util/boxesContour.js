@@ -1,6 +1,4 @@
 import { contours } from 'd3-contour';
-import { geoPath, geoIdentity } from 'd3-geo';
-import { simplifyLinesPath } from './path';
 
 function pointInBox(p, box) {
     return !(p.x < box.left || p.x > box.right || p.y > box.bottom || p.y < box.top)
@@ -62,21 +60,32 @@ function computeContours(boundingBoxes, pageDimensions) {
     const maxY = Math.ceil(Math.max(...offsetBoxes.map(rect => rect.bottom)));
     const maxNbPixels = 20000;
     const downscaleFactor = (maxX * maxY) / maxNbPixels;
-    const resX = Math.ceil(maxX / downscaleFactor);
-    const resY = Math.ceil(maxY / downscaleFactor);
-    // console.log(resX, resY);
-    const values = new Array(resX * resY); // one coordinate per pixel
-    for (let j = 0, k = 0; j < resY; ++j) {
-        for (let i = 0; i < resX; ++i, ++k) {
+    const widthArrayX = Math.ceil(maxX / downscaleFactor);
+    const widthArrayY = Math.ceil(maxY / downscaleFactor);
+    const pixelsByStepX = (maxX) / widthArrayX; 
+    const pixelsByStepY = (maxY) / widthArrayY; 
+    const values = new Array(widthArrayX * widthArrayY); // one coordinate per pixel
+    for (let j = 0, k = 0; j < widthArrayY; ++j) {
+        for (let i = 0; i < widthArrayX; ++i, ++k) {
             values[k] = pointInBoxes({x: i * downscaleFactor, y: j * downscaleFactor}, offsetBoxes) ? 1 : 0;
         }
     }
-    const computedContours = contours().size([resX, resY]).thresholds([1])(values);
-    const projection = geoIdentity().fitExtent([[minX, minY], [minX + maxX, minY + maxY]], computedContours[0]);
-    const path = geoPath().projection(projection);
-    
-    
-    return `${_pathWithHoles} ${simplifyLinesPath(path(computedContours[0]))}`;
+
+    const computedContours = contours().size([widthArrayX, widthArrayY]).thresholds([1])(values)[0];
+    let holes = '';
+    for (let polygon of computedContours.coordinates) {
+        for (let ring of polygon) {
+            for (let i = 0; i < ring.length; ++i) {
+                const point = ring[i];
+                const x = point[0] * pixelsByStepX + minX;
+                const y = point[1] * pixelsByStepY + minY;
+                if (!i) holes += `M${x} ${y}`;
+                else holes += `L ${x} ${y}`;
+            }
+            holes += 'Z'
+        }
+    }
+    return `${_pathWithHoles} ${holes}`;
 }
 
 export { computeContours };
