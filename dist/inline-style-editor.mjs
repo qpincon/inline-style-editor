@@ -4329,7 +4329,7 @@ function instance($$self, $$props, $$invalidate) {
 
 		$$invalidate(14, allCurrentPropDefs[cssPropName].value = val, allCurrentPropDefs);
 		$$invalidate(14, allCurrentPropDefs[cssPropName].displayed = finalValue, allCurrentPropDefs);
-		onStyleChanged(currentElement, currentRule);
+		onStyleChanged(currentElement, currentRule, cssPropName, finalValue);
 		updateHelpers();
 	}
 

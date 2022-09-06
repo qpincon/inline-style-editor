@@ -261,7 +261,7 @@
         else currentRule.style.setProperty(cssPropName, finalValue);
         allCurrentPropDefs[cssPropName].value = val;
         allCurrentPropDefs[cssPropName].displayed = finalValue;
-        onStyleChanged(currentElement, currentRule);
+        onStyleChanged(currentElement, currentRule, cssPropName, finalValue);
         updateHelpers();
     } 
     const updateCssRule = debounce(_updateCssRule, 100);
