@@ -54,6 +54,7 @@ new InlineStyleEditor({
 | ------------- |:-------------:| -----:|
 | listenOnClick      | Boolean | Default to false. If true, click events will be listened on the `<body>` element, and the editor opened where clicked |
 | getAdditionalElems      | Function      |   A function called everytime the editor is opened. Should return a *list* of HTMLElement, that will be editable as well |
+| onStyleChanged      | Function      |   A function called everytime a style is modified. The first argument is the current target element, the second the edited CSS rule, or 'inline' if inline |
 
 ### Suported css properties
 

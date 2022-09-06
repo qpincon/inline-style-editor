@@ -1,9 +1,9 @@
 <script>
     import '../assets/index.scss';
     import { onMount, onDestroy } from "svelte";
-    
     import pick from 'lodash.pick';
     import debounce from 'lodash.debounce';
+
     import { computeContours } from '../util/boxesContour';
     import ColorPicker from './ColorPicker.svelte';
     import { getFonts } from '../util/fonts';
@@ -41,6 +41,7 @@
 
     export let getAdditionalElems = () => [];
     export let listenOnClick = false;
+    export let onStyleChanged = () => {};
     let elementToListen = null;
     let positionAnchor;
     let self;
@@ -99,6 +100,10 @@
         document.body.appendChild(helperElemWrapper);
         document.body.appendChild(positionAnchor);
         udpatePageDimensions();
+        // make sure the layout is computed to get the client size
+        setTimeout(() => {
+            udpatePageDimensions();
+        }, 1000);
         window.addEventListener('resize', udpatePageDimensions);
     });
 
@@ -207,6 +212,7 @@
     export function close() {
         self.style.display = "none";
         helperElemWrapper.style.display = "none";
+        pathWithHoles = ''
     }
 
     function overlayClicked() {
@@ -255,12 +261,21 @@
         else currentRule.style.setProperty(cssPropName, finalValue);
         allCurrentPropDefs[cssPropName].value = val;
         allCurrentPropDefs[cssPropName].displayed = finalValue;
+        onStyleChanged(currentElement, currentRule);
         updateHelpers();
     } 
     const updateCssRule = debounce(_updateCssRule, 100);
     
-    function udpatePageDimensions(){
-        pageDimensions = {width: document.body.scrollWidth, height: document.body.scrollHeight};
+    function udpatePageDimensions() {
+        const bodyStyle     = getComputedStyle(document.body);
+        const marginLeft      = parseInt(bodyStyle.marginLeft);
+        const marginRight     = parseInt(bodyStyle.marginRight);
+        const marginTop       = parseInt(bodyStyle.marginTop);
+        const marginBottom    = parseInt(bodyStyle.marginBottom);
+        pageDimensions = {
+            width: document.body.offsetWidth + marginLeft + marginRight,
+            height: document.body.offsetHeight + marginTop + marginBottom
+        };
     }
 
     function cssRgbToHex(rgbStr) {
