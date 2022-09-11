@@ -28,20 +28,26 @@
         "stroke-dasharray": {type: "slider", min: 0, max: 30, suffix: 'px'},
         "background-color": {type: "color"},
     };
+    
+
+    export let getAdditionalElems = () => [];
+    export let listenOnClick = false;
+    export let onStyleChanged = () => {};
+    export let customProps = {};
+
     const typeText = "text";
     const typeBorder = "border";
     const typeStroke = "stroke";
     const typeBackground = "background";
+    const customType = "custom";
     const propByType = {
         [typeText]: fontProps,
         [typeBorder]: borderProps,
         [typeStroke]: pathProps,
         [typeBackground]: backgroundProps,
+        [customType]: Object.keys(customProps),
     };
 
-    export let getAdditionalElems = () => [];
-    export let listenOnClick = false;
-    export let onStyleChanged = () => {};
     let elementToListen = null;
     let positionAnchor;
     let self;
@@ -72,15 +78,23 @@
         };
     }
     $: {
-        if (curType && currentRule){
-            const _allCurrentPropDefs = pick(cssPropByType, propByType[curType]);
+        if (curType && currentRule) {
+            const allProps = {...cssPropByType, ...customProps};
+            const _allCurrentPropDefs = pick(allProps, propByType[curType]);
             Object.keys(_allCurrentPropDefs).forEach(key => {
-                _allCurrentPropDefs[key].displayed = getComputedPropValue(currentElement, key, 'raw');
                 const propSelectType = _allCurrentPropDefs[key].type;
                 let retrieveType = 'number';
                 if (propSelectType === 'color') retrieveType = 'rgb';
                 else if (propSelectType === 'select') retrieveType = 'raw';
-                _allCurrentPropDefs[key].value = getComputedPropValue(currentElement, key, retrieveType);
+                if (_allCurrentPropDefs[key].getter) {
+                    const val =  _allCurrentPropDefs[key].getter(currentElement);
+                    _allCurrentPropDefs[key].value = val;
+                    _allCurrentPropDefs[key].displayed = val;
+                }
+                else {
+                    _allCurrentPropDefs[key].displayed = getComputedPropValue(currentElement, key, 'raw');
+                    _allCurrentPropDefs[key].value = getComputedPropValue(currentElement, key, retrieveType);
+                }
             });
             
             propsByType = Object.entries(_allCurrentPropDefs).reduce((byType, [propName, selectorDef]) => {
@@ -202,6 +216,9 @@
         targetsToSearch = [el, ...getAdditionalElems(el)];
         allTypes = getEditableTypes(targetsToSearch);
         allRules = getMatchedCSSRules(targetsToSearch);
+        if (Object.keys(customProps).length) {
+            allTypes[0].push(customType);
+        }
         if (x && y) show(x, y);
         else {
             const rect = getBoundingBoxInfos(el, 15);
@@ -213,6 +230,10 @@
         self.style.display = "none";
         helperElemWrapper.style.display = "none";
         pathWithHoles = ''
+    }
+
+    export function isOpened() {
+        return self.style.display === 'block';
     }
 
     function overlayClicked() {
@@ -252,19 +273,25 @@
         };
     }
 
-    function _updateCssRule(cssPropName, val, suffix) {
+    function _updateProp(propName, val, suffix) {
         const finalValue = suffix ? val + suffix : val;
         if (currentRule === 'inline') {
-            const style = currentElement.style; // do not trigger reactivity on currentElement
-            style[cssPropName] = finalValue;
+            if (allCurrentPropDefs[propName].setter) {
+                allCurrentPropDefs[propName].setter(currentElement, val);
+            }
+            else {
+                const style = currentElement.style; // do not trigger reactivity on currentElement
+                style[propName] = finalValue;
+            }
         }
-        else currentRule.style.setProperty(cssPropName, finalValue);
-        allCurrentPropDefs[cssPropName].value = val;
-        allCurrentPropDefs[cssPropName].displayed = finalValue;
-        onStyleChanged(currentElement, currentRule, cssPropName, finalValue);
+        else currentRule.style.setProperty(propName, finalValue);
+        allCurrentPropDefs[propName].value = val;
+        allCurrentPropDefs[propName].displayed = finalValue;
+        
+        onStyleChanged(currentElement, currentRule, propName, finalValue);
         updateHelpers();
     } 
-    const updateCssRule = debounce(_updateCssRule, 100);
+    const updateProp = debounce(_updateProp, 100);
     
     function udpatePageDimensions() {
         const bodyStyle     = getComputedStyle(document.body);
@@ -310,6 +337,13 @@
         currentElement.parentNode.appendChild(currentElement);
     }
     
+    function selectRule(ruleIndex) {
+        const newRule = allRules[selectedElemIndex]?.[ruleIndex];
+        if (newRule !== 'inline' && selectedTypeIndex === allTypes[selectedElemIndex].length - 1 ) {
+            selectedTypeIndex = 0;
+        }
+        selectedRuleIndex = ruleIndex;
+    }
 </script>
 
 <div bind:this={positionAnchor} style="position: absolute;"> </div>
@@ -340,14 +374,17 @@ on:click={overlayClicked}>
         {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
             <span title={ruleName}
                 class:selected="{selectedRuleIndex === ruleIndex}" 
-                on:click="{() => {selectedRuleIndex = ruleIndex;}}"
+                on:click="{() => { selectRule(ruleIndex); }}"
             >  {ruleName}</span>
         {/each}
     </div>
     <div class="select-tab">
         <b> Property type: </b>
         {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
-            <span class:selected="{selectedTypeIndex === typeIndex}" on:click="{() => {selectedTypeIndex = typeIndex;}}"> {type} </span>
+            <!-- Only display "custom" on "inline" rule -->
+            {#if type !== 'custom' || currentRule === 'inline'} 
+                <span class:selected="{selectedTypeIndex === typeIndex}" on:click="{() => {selectedTypeIndex = typeIndex;}}"> {type} </span>
+            {/if}
         {/each}
     </div>
     {#if allTypes[selectedElemIndex]}
@@ -367,11 +404,12 @@ on:click={overlayClicked}>
                 {#if propType === 'slider'}
                     <input type=range value={allCurrentPropDefs[selectedName].value}
                     min={allCurrentPropDefs[selectedName].min} 
-                    max={allCurrentPropDefs[selectedName].max} 
-                    on:change={(e) => updateCssRule(selectedName, e.target.value, allCurrentPropDefs[selectedName].suffix, e.target)}/>
+                    max={allCurrentPropDefs[selectedName].max}
+                    step={allCurrentPropDefs[selectedName].step || 1}
+                    on:change={(e) => updateProp(selectedName, e.target.value, allCurrentPropDefs[selectedName].suffix, e.target)}/>
                     <span class="current-value"> { allCurrentPropDefs[selectedName].displayed } </span> 
                 {:else if propType == 'select'}
-                    <select on:change={(e) => updateCssRule(selectedName, e.target.value)}>
+                    <select on:change={(e) => updateProp(selectedName, e.target.value)}>
                         {#each allCurrentPropDefs[selectedName].choices() as choice}
                             <option selected={choice == allCurrentPropDefs[selectedName].value || null}> {choice} </option>
                         {/each}
@@ -379,7 +417,7 @@ on:click={overlayClicked}>
                 {:else if propType == 'color'}
                     <ColorPicker 
                         value={allCurrentPropDefs[selectedName].value}
-                        onChange={(color => updateCssRule(selectedName, color))}
+                        onChange={(color => updateProp(selectedName, color))}
                     /> 
                 {/if}
             </div>
