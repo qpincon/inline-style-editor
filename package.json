@@ -28,8 +28,6 @@
   },
   "dependencies": {
     "d3-contour": "^4.0.0",
-    "lodash.debounce": "^4.0.8",
-    "lodash.pick": "^4.4.0",
     "parse-svg-path": "^0.1.2",
     "svelte": "^3.49.0",
     "vanilla-picker": "^2.12.1"

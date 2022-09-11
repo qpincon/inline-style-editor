@@ -44,6 +44,9 @@ function text(data) {
 function space() {
     return text(' ');
 }
+function empty() {
+    return text('');
+}
 function listen(node, event, handler, options) {
     node.addEventListener(event, handler, options);
     return () => node.removeEventListener(event, handler, options);
@@ -101,6 +104,10 @@ function schedule_update() {
         update_scheduled = true;
         resolved_promise.then(flush);
     }
+}
+function tick() {
+    schedule_update();
+    return resolved_promise;
 }
 function add_render_callback(fn) {
     render_callbacks.push(fn);
@@ -340,889 +347,27 @@ class SvelteComponent {
     }
 }
 
-var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
-
-/**
- * lodash (Custom Build) <https://lodash.com/>
- * Build: `lodash modularize exports="npm" -o ./`
- * Copyright jQuery Foundation and other contributors <https://jquery.org/>
- * Released under MIT license <https://lodash.com/license>
- * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
- * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
- */
-
-/** Used as references for various `Number` constants. */
-var INFINITY = 1 / 0,
-    MAX_SAFE_INTEGER = 9007199254740991;
-
-/** `Object#toString` result references. */
-var argsTag = '[object Arguments]',
-    funcTag = '[object Function]',
-    genTag = '[object GeneratorFunction]',
-    symbolTag$1 = '[object Symbol]';
-
-/** Detect free variable `global` from Node.js. */
-var freeGlobal$1 = typeof commonjsGlobal == 'object' && commonjsGlobal && commonjsGlobal.Object === Object && commonjsGlobal;
-
-/** Detect free variable `self`. */
-var freeSelf$1 = typeof self == 'object' && self && self.Object === Object && self;
-
-/** Used as a reference to the global object. */
-var root$1 = freeGlobal$1 || freeSelf$1 || Function('return this')();
-
-/**
- * A faster alternative to `Function#apply`, this function invokes `func`
- * with the `this` binding of `thisArg` and the arguments of `args`.
- *
- * @private
- * @param {Function} func The function to invoke.
- * @param {*} thisArg The `this` binding of `func`.
- * @param {Array} args The arguments to invoke `func` with.
- * @returns {*} Returns the result of `func`.
- */
-function apply(func, thisArg, args) {
-  switch (args.length) {
-    case 0: return func.call(thisArg);
-    case 1: return func.call(thisArg, args[0]);
-    case 2: return func.call(thisArg, args[0], args[1]);
-    case 3: return func.call(thisArg, args[0], args[1], args[2]);
-  }
-  return func.apply(thisArg, args);
+function pick(obj, keys) {
+    return keys.reduce((picked, curKey) => {
+        picked[curKey] = obj[curKey];
+        return picked;
+    }, {});
 }
 
-/**
- * A specialized version of `_.map` for arrays without support for iteratee
- * shorthands.
- *
- * @private
- * @param {Array} [array] The array to iterate over.
- * @param {Function} iteratee The function invoked per iteration.
- * @returns {Array} Returns the new mapped array.
- */
-function arrayMap(array, iteratee) {
-  var index = -1,
-      length = array ? array.length : 0,
-      result = Array(length);
-
-  while (++index < length) {
-    result[index] = iteratee(array[index], index, array);
-  }
-  return result;
+function debounce(func, wait, immediate = false) {
+    let timeout;
+    return function() {
+        const context = this, args = arguments;
+        const later = function() {
+            timeout = null;
+            if (!immediate) func.apply(context, args);
+        };
+        const callNow = immediate && !timeout;
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow) func.apply(context, args);
+    };
 }
-
-/**
- * Appends the elements of `values` to `array`.
- *
- * @private
- * @param {Array} array The array to modify.
- * @param {Array} values The values to append.
- * @returns {Array} Returns `array`.
- */
-function arrayPush(array, values) {
-  var index = -1,
-      length = values.length,
-      offset = array.length;
-
-  while (++index < length) {
-    array[offset + index] = values[index];
-  }
-  return array;
-}
-
-/** Used for built-in method references. */
-var objectProto$1 = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto$1.hasOwnProperty;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objectToString$1 = objectProto$1.toString;
-
-/** Built-in value references. */
-var Symbol$1 = root$1.Symbol,
-    propertyIsEnumerable = objectProto$1.propertyIsEnumerable,
-    spreadableSymbol = Symbol$1 ? Symbol$1.isConcatSpreadable : undefined;
-
-/* Built-in method references for those with the same name as other `lodash` methods. */
-var nativeMax$1 = Math.max;
-
-/**
- * The base implementation of `_.flatten` with support for restricting flattening.
- *
- * @private
- * @param {Array} array The array to flatten.
- * @param {number} depth The maximum recursion depth.
- * @param {boolean} [predicate=isFlattenable] The function invoked per iteration.
- * @param {boolean} [isStrict] Restrict to values that pass `predicate` checks.
- * @param {Array} [result=[]] The initial result value.
- * @returns {Array} Returns the new flattened array.
- */
-function baseFlatten(array, depth, predicate, isStrict, result) {
-  var index = -1,
-      length = array.length;
-
-  predicate || (predicate = isFlattenable);
-  result || (result = []);
-
-  while (++index < length) {
-    var value = array[index];
-    if (depth > 0 && predicate(value)) {
-      if (depth > 1) {
-        // Recursively flatten arrays (susceptible to call stack limits).
-        baseFlatten(value, depth - 1, predicate, isStrict, result);
-      } else {
-        arrayPush(result, value);
-      }
-    } else if (!isStrict) {
-      result[result.length] = value;
-    }
-  }
-  return result;
-}
-
-/**
- * The base implementation of `_.pick` without support for individual
- * property identifiers.
- *
- * @private
- * @param {Object} object The source object.
- * @param {string[]} props The property identifiers to pick.
- * @returns {Object} Returns the new object.
- */
-function basePick(object, props) {
-  object = Object(object);
-  return basePickBy(object, props, function(value, key) {
-    return key in object;
-  });
-}
-
-/**
- * The base implementation of  `_.pickBy` without support for iteratee shorthands.
- *
- * @private
- * @param {Object} object The source object.
- * @param {string[]} props The property identifiers to pick from.
- * @param {Function} predicate The function invoked per property.
- * @returns {Object} Returns the new object.
- */
-function basePickBy(object, props, predicate) {
-  var index = -1,
-      length = props.length,
-      result = {};
-
-  while (++index < length) {
-    var key = props[index],
-        value = object[key];
-
-    if (predicate(value, key)) {
-      result[key] = value;
-    }
-  }
-  return result;
-}
-
-/**
- * The base implementation of `_.rest` which doesn't validate or coerce arguments.
- *
- * @private
- * @param {Function} func The function to apply a rest parameter to.
- * @param {number} [start=func.length-1] The start position of the rest parameter.
- * @returns {Function} Returns the new function.
- */
-function baseRest(func, start) {
-  start = nativeMax$1(start === undefined ? (func.length - 1) : start, 0);
-  return function() {
-    var args = arguments,
-        index = -1,
-        length = nativeMax$1(args.length - start, 0),
-        array = Array(length);
-
-    while (++index < length) {
-      array[index] = args[start + index];
-    }
-    index = -1;
-    var otherArgs = Array(start + 1);
-    while (++index < start) {
-      otherArgs[index] = args[index];
-    }
-    otherArgs[start] = array;
-    return apply(func, this, otherArgs);
-  };
-}
-
-/**
- * Checks if `value` is a flattenable `arguments` object or array.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is flattenable, else `false`.
- */
-function isFlattenable(value) {
-  return isArray(value) || isArguments(value) ||
-    !!(spreadableSymbol && value && value[spreadableSymbol]);
-}
-
-/**
- * Converts `value` to a string key if it's not a string or symbol.
- *
- * @private
- * @param {*} value The value to inspect.
- * @returns {string|symbol} Returns the key.
- */
-function toKey(value) {
-  if (typeof value == 'string' || isSymbol$1(value)) {
-    return value;
-  }
-  var result = (value + '');
-  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
-}
-
-/**
- * Checks if `value` is likely an `arguments` object.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an `arguments` object,
- *  else `false`.
- * @example
- *
- * _.isArguments(function() { return arguments; }());
- * // => true
- *
- * _.isArguments([1, 2, 3]);
- * // => false
- */
-function isArguments(value) {
-  // Safari 8.1 makes `arguments.callee` enumerable in strict mode.
-  return isArrayLikeObject(value) && hasOwnProperty.call(value, 'callee') &&
-    (!propertyIsEnumerable.call(value, 'callee') || objectToString$1.call(value) == argsTag);
-}
-
-/**
- * Checks if `value` is classified as an `Array` object.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an array, else `false`.
- * @example
- *
- * _.isArray([1, 2, 3]);
- * // => true
- *
- * _.isArray(document.body.children);
- * // => false
- *
- * _.isArray('abc');
- * // => false
- *
- * _.isArray(_.noop);
- * // => false
- */
-var isArray = Array.isArray;
-
-/**
- * Checks if `value` is array-like. A value is considered array-like if it's
- * not a function and has a `value.length` that's an integer greater than or
- * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
- * @example
- *
- * _.isArrayLike([1, 2, 3]);
- * // => true
- *
- * _.isArrayLike(document.body.children);
- * // => true
- *
- * _.isArrayLike('abc');
- * // => true
- *
- * _.isArrayLike(_.noop);
- * // => false
- */
-function isArrayLike(value) {
-  return value != null && isLength(value.length) && !isFunction(value);
-}
-
-/**
- * This method is like `_.isArrayLike` except that it also checks if `value`
- * is an object.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an array-like object,
- *  else `false`.
- * @example
- *
- * _.isArrayLikeObject([1, 2, 3]);
- * // => true
- *
- * _.isArrayLikeObject(document.body.children);
- * // => true
- *
- * _.isArrayLikeObject('abc');
- * // => false
- *
- * _.isArrayLikeObject(_.noop);
- * // => false
- */
-function isArrayLikeObject(value) {
-  return isObjectLike$1(value) && isArrayLike(value);
-}
-
-/**
- * Checks if `value` is classified as a `Function` object.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a function, else `false`.
- * @example
- *
- * _.isFunction(_);
- * // => true
- *
- * _.isFunction(/abc/);
- * // => false
- */
-function isFunction(value) {
-  // The use of `Object#toString` avoids issues with the `typeof` operator
-  // in Safari 8-9 which returns 'object' for typed array and other constructors.
-  var tag = isObject$1(value) ? objectToString$1.call(value) : '';
-  return tag == funcTag || tag == genTag;
-}
-
-/**
- * Checks if `value` is a valid array-like length.
- *
- * **Note:** This method is loosely based on
- * [`ToLength`](http://ecma-international.org/ecma-262/7.0/#sec-tolength).
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
- * @example
- *
- * _.isLength(3);
- * // => true
- *
- * _.isLength(Number.MIN_VALUE);
- * // => false
- *
- * _.isLength(Infinity);
- * // => false
- *
- * _.isLength('3');
- * // => false
- */
-function isLength(value) {
-  return typeof value == 'number' &&
-    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-}
-
-/**
- * Checks if `value` is the
- * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
- * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an object, else `false`.
- * @example
- *
- * _.isObject({});
- * // => true
- *
- * _.isObject([1, 2, 3]);
- * // => true
- *
- * _.isObject(_.noop);
- * // => true
- *
- * _.isObject(null);
- * // => false
- */
-function isObject$1(value) {
-  var type = typeof value;
-  return !!value && (type == 'object' || type == 'function');
-}
-
-/**
- * Checks if `value` is object-like. A value is object-like if it's not `null`
- * and has a `typeof` result of "object".
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
- * @example
- *
- * _.isObjectLike({});
- * // => true
- *
- * _.isObjectLike([1, 2, 3]);
- * // => true
- *
- * _.isObjectLike(_.noop);
- * // => false
- *
- * _.isObjectLike(null);
- * // => false
- */
-function isObjectLike$1(value) {
-  return !!value && typeof value == 'object';
-}
-
-/**
- * Checks if `value` is classified as a `Symbol` primitive or object.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
- * @example
- *
- * _.isSymbol(Symbol.iterator);
- * // => true
- *
- * _.isSymbol('abc');
- * // => false
- */
-function isSymbol$1(value) {
-  return typeof value == 'symbol' ||
-    (isObjectLike$1(value) && objectToString$1.call(value) == symbolTag$1);
-}
-
-/**
- * Creates an object composed of the picked `object` properties.
- *
- * @static
- * @since 0.1.0
- * @memberOf _
- * @category Object
- * @param {Object} object The source object.
- * @param {...(string|string[])} [props] The property identifiers to pick.
- * @returns {Object} Returns the new object.
- * @example
- *
- * var object = { 'a': 1, 'b': '2', 'c': 3 };
- *
- * _.pick(object, ['a', 'c']);
- * // => { 'a': 1, 'c': 3 }
- */
-var pick = baseRest(function(object, props) {
-  return object == null ? {} : basePick(object, arrayMap(baseFlatten(props, 1), toKey));
-});
-
-var lodash_pick = pick;
-
-/**
- * lodash (Custom Build) <https://lodash.com/>
- * Build: `lodash modularize exports="npm" -o ./`
- * Copyright jQuery Foundation and other contributors <https://jquery.org/>
- * Released under MIT license <https://lodash.com/license>
- * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
- * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
- */
-
-/** Used as the `TypeError` message for "Functions" methods. */
-var FUNC_ERROR_TEXT = 'Expected a function';
-
-/** Used as references for various `Number` constants. */
-var NAN = 0 / 0;
-
-/** `Object#toString` result references. */
-var symbolTag = '[object Symbol]';
-
-/** Used to match leading and trailing whitespace. */
-var reTrim = /^\s+|\s+$/g;
-
-/** Used to detect bad signed hexadecimal string values. */
-var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
-
-/** Used to detect binary string values. */
-var reIsBinary = /^0b[01]+$/i;
-
-/** Used to detect octal string values. */
-var reIsOctal = /^0o[0-7]+$/i;
-
-/** Built-in method references without a dependency on `root`. */
-var freeParseInt = parseInt;
-
-/** Detect free variable `global` from Node.js. */
-var freeGlobal = typeof commonjsGlobal == 'object' && commonjsGlobal && commonjsGlobal.Object === Object && commonjsGlobal;
-
-/** Detect free variable `self`. */
-var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
-
-/** Used as a reference to the global object. */
-var root = freeGlobal || freeSelf || Function('return this')();
-
-/** Used for built-in method references. */
-var objectProto = Object.prototype;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objectToString = objectProto.toString;
-
-/* Built-in method references for those with the same name as other `lodash` methods. */
-var nativeMax = Math.max,
-    nativeMin = Math.min;
-
-/**
- * Gets the timestamp of the number of milliseconds that have elapsed since
- * the Unix epoch (1 January 1970 00:00:00 UTC).
- *
- * @static
- * @memberOf _
- * @since 2.4.0
- * @category Date
- * @returns {number} Returns the timestamp.
- * @example
- *
- * _.defer(function(stamp) {
- *   console.log(_.now() - stamp);
- * }, _.now());
- * // => Logs the number of milliseconds it took for the deferred invocation.
- */
-var now = function() {
-  return root.Date.now();
-};
-
-/**
- * Creates a debounced function that delays invoking `func` until after `wait`
- * milliseconds have elapsed since the last time the debounced function was
- * invoked. The debounced function comes with a `cancel` method to cancel
- * delayed `func` invocations and a `flush` method to immediately invoke them.
- * Provide `options` to indicate whether `func` should be invoked on the
- * leading and/or trailing edge of the `wait` timeout. The `func` is invoked
- * with the last arguments provided to the debounced function. Subsequent
- * calls to the debounced function return the result of the last `func`
- * invocation.
- *
- * **Note:** If `leading` and `trailing` options are `true`, `func` is
- * invoked on the trailing edge of the timeout only if the debounced function
- * is invoked more than once during the `wait` timeout.
- *
- * If `wait` is `0` and `leading` is `false`, `func` invocation is deferred
- * until to the next tick, similar to `setTimeout` with a timeout of `0`.
- *
- * See [David Corbacho's article](https://css-tricks.com/debouncing-throttling-explained-examples/)
- * for details over the differences between `_.debounce` and `_.throttle`.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Function
- * @param {Function} func The function to debounce.
- * @param {number} [wait=0] The number of milliseconds to delay.
- * @param {Object} [options={}] The options object.
- * @param {boolean} [options.leading=false]
- *  Specify invoking on the leading edge of the timeout.
- * @param {number} [options.maxWait]
- *  The maximum time `func` is allowed to be delayed before it's invoked.
- * @param {boolean} [options.trailing=true]
- *  Specify invoking on the trailing edge of the timeout.
- * @returns {Function} Returns the new debounced function.
- * @example
- *
- * // Avoid costly calculations while the window size is in flux.
- * jQuery(window).on('resize', _.debounce(calculateLayout, 150));
- *
- * // Invoke `sendMail` when clicked, debouncing subsequent calls.
- * jQuery(element).on('click', _.debounce(sendMail, 300, {
- *   'leading': true,
- *   'trailing': false
- * }));
- *
- * // Ensure `batchLog` is invoked once after 1 second of debounced calls.
- * var debounced = _.debounce(batchLog, 250, { 'maxWait': 1000 });
- * var source = new EventSource('/stream');
- * jQuery(source).on('message', debounced);
- *
- * // Cancel the trailing debounced invocation.
- * jQuery(window).on('popstate', debounced.cancel);
- */
-function debounce(func, wait, options) {
-  var lastArgs,
-      lastThis,
-      maxWait,
-      result,
-      timerId,
-      lastCallTime,
-      lastInvokeTime = 0,
-      leading = false,
-      maxing = false,
-      trailing = true;
-
-  if (typeof func != 'function') {
-    throw new TypeError(FUNC_ERROR_TEXT);
-  }
-  wait = toNumber(wait) || 0;
-  if (isObject(options)) {
-    leading = !!options.leading;
-    maxing = 'maxWait' in options;
-    maxWait = maxing ? nativeMax(toNumber(options.maxWait) || 0, wait) : maxWait;
-    trailing = 'trailing' in options ? !!options.trailing : trailing;
-  }
-
-  function invokeFunc(time) {
-    var args = lastArgs,
-        thisArg = lastThis;
-
-    lastArgs = lastThis = undefined;
-    lastInvokeTime = time;
-    result = func.apply(thisArg, args);
-    return result;
-  }
-
-  function leadingEdge(time) {
-    // Reset any `maxWait` timer.
-    lastInvokeTime = time;
-    // Start the timer for the trailing edge.
-    timerId = setTimeout(timerExpired, wait);
-    // Invoke the leading edge.
-    return leading ? invokeFunc(time) : result;
-  }
-
-  function remainingWait(time) {
-    var timeSinceLastCall = time - lastCallTime,
-        timeSinceLastInvoke = time - lastInvokeTime,
-        result = wait - timeSinceLastCall;
-
-    return maxing ? nativeMin(result, maxWait - timeSinceLastInvoke) : result;
-  }
-
-  function shouldInvoke(time) {
-    var timeSinceLastCall = time - lastCallTime,
-        timeSinceLastInvoke = time - lastInvokeTime;
-
-    // Either this is the first call, activity has stopped and we're at the
-    // trailing edge, the system time has gone backwards and we're treating
-    // it as the trailing edge, or we've hit the `maxWait` limit.
-    return (lastCallTime === undefined || (timeSinceLastCall >= wait) ||
-      (timeSinceLastCall < 0) || (maxing && timeSinceLastInvoke >= maxWait));
-  }
-
-  function timerExpired() {
-    var time = now();
-    if (shouldInvoke(time)) {
-      return trailingEdge(time);
-    }
-    // Restart the timer.
-    timerId = setTimeout(timerExpired, remainingWait(time));
-  }
-
-  function trailingEdge(time) {
-    timerId = undefined;
-
-    // Only invoke if we have `lastArgs` which means `func` has been
-    // debounced at least once.
-    if (trailing && lastArgs) {
-      return invokeFunc(time);
-    }
-    lastArgs = lastThis = undefined;
-    return result;
-  }
-
-  function cancel() {
-    if (timerId !== undefined) {
-      clearTimeout(timerId);
-    }
-    lastInvokeTime = 0;
-    lastArgs = lastCallTime = lastThis = timerId = undefined;
-  }
-
-  function flush() {
-    return timerId === undefined ? result : trailingEdge(now());
-  }
-
-  function debounced() {
-    var time = now(),
-        isInvoking = shouldInvoke(time);
-
-    lastArgs = arguments;
-    lastThis = this;
-    lastCallTime = time;
-
-    if (isInvoking) {
-      if (timerId === undefined) {
-        return leadingEdge(lastCallTime);
-      }
-      if (maxing) {
-        // Handle invocations in a tight loop.
-        timerId = setTimeout(timerExpired, wait);
-        return invokeFunc(lastCallTime);
-      }
-    }
-    if (timerId === undefined) {
-      timerId = setTimeout(timerExpired, wait);
-    }
-    return result;
-  }
-  debounced.cancel = cancel;
-  debounced.flush = flush;
-  return debounced;
-}
-
-/**
- * Checks if `value` is the
- * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
- * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an object, else `false`.
- * @example
- *
- * _.isObject({});
- * // => true
- *
- * _.isObject([1, 2, 3]);
- * // => true
- *
- * _.isObject(_.noop);
- * // => true
- *
- * _.isObject(null);
- * // => false
- */
-function isObject(value) {
-  var type = typeof value;
-  return !!value && (type == 'object' || type == 'function');
-}
-
-/**
- * Checks if `value` is object-like. A value is object-like if it's not `null`
- * and has a `typeof` result of "object".
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
- * @example
- *
- * _.isObjectLike({});
- * // => true
- *
- * _.isObjectLike([1, 2, 3]);
- * // => true
- *
- * _.isObjectLike(_.noop);
- * // => false
- *
- * _.isObjectLike(null);
- * // => false
- */
-function isObjectLike(value) {
-  return !!value && typeof value == 'object';
-}
-
-/**
- * Checks if `value` is classified as a `Symbol` primitive or object.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
- * @example
- *
- * _.isSymbol(Symbol.iterator);
- * // => true
- *
- * _.isSymbol('abc');
- * // => false
- */
-function isSymbol(value) {
-  return typeof value == 'symbol' ||
-    (isObjectLike(value) && objectToString.call(value) == symbolTag);
-}
-
-/**
- * Converts `value` to a number.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to process.
- * @returns {number} Returns the number.
- * @example
- *
- * _.toNumber(3.2);
- * // => 3.2
- *
- * _.toNumber(Number.MIN_VALUE);
- * // => 5e-324
- *
- * _.toNumber(Infinity);
- * // => Infinity
- *
- * _.toNumber('3.2');
- * // => 3.2
- */
-function toNumber(value) {
-  if (typeof value == 'number') {
-    return value;
-  }
-  if (isSymbol(value)) {
-    return NAN;
-  }
-  if (isObject(value)) {
-    var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
-    value = isObject(other) ? (other + '') : other;
-  }
-  if (typeof value != 'string') {
-    return value === 0 ? value : +value;
-  }
-  value = value.replace(reTrim, '');
-  var isBinary = reIsBinary.test(value);
-  return (isBinary || reIsOctal.test(value))
-    ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
-    : (reIsBadHex.test(value) ? NAN : +value);
-}
-
-var lodash_debounce = debounce;
 
 function ascending$1(a, b) {
   return a == null || b == null ? NaN : a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
@@ -2862,51 +2007,51 @@ function getFonts() {
 
 function get_each_context(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[54] = list[i][0];
-	child_ctx[55] = list[i][1];
-	child_ctx[57] = list;
-	child_ctx[58] = i;
-	const constants_0 = /*choices*/ child_ctx[55].props[/*choices*/ child_ctx[55].selected];
-	child_ctx[56] = constants_0;
+	child_ctx[57] = list[i][0];
+	child_ctx[58] = list[i][1];
+	child_ctx[60] = list;
+	child_ctx[61] = i;
+	const constants_0 = /*choices*/ child_ctx[58].props[/*choices*/ child_ctx[58].selected];
+	child_ctx[59] = constants_0;
 	return child_ctx;
 }
 
 function get_each_context_1(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[59] = list[i];
+	child_ctx[62] = list[i];
 	return child_ctx;
 }
 
 function get_each_context_2(ctx, list, i) {
-	const child_ctx = ctx.slice();
-	child_ctx[62] = list[i];
-	child_ctx[64] = i;
-	return child_ctx;
-}
-
-function get_each_context_3(ctx, list, i) {
 	const child_ctx = ctx.slice();
 	child_ctx[65] = list[i];
 	child_ctx[67] = i;
 	return child_ctx;
 }
 
-function get_each_context_4(ctx, list, i) {
+function get_each_context_3(ctx, list, i) {
 	const child_ctx = ctx.slice();
 	child_ctx[68] = list[i];
 	child_ctx[70] = i;
 	return child_ctx;
 }
 
-function get_each_context_5(ctx, list, i) {
+function get_each_context_4(ctx, list, i) {
 	const child_ctx = ctx.slice();
 	child_ctx[71] = list[i];
 	child_ctx[73] = i;
 	return child_ctx;
 }
 
-// (328:4) {#if targetsToSearch.length > 1}
-function create_if_block_6(ctx) {
+function get_each_context_5(ctx, list, i) {
+	const child_ctx = ctx.slice();
+	child_ctx[74] = list[i];
+	child_ctx[76] = i;
+	return child_ctx;
+}
+
+// (365:4) {#if targetsToSearch.length > 1}
+function create_if_block_7(ctx) {
 	let div;
 	let b;
 	let t1;
@@ -2970,7 +2115,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (331:8) {#each targetsToSearch as target, elemIndex}
+// (368:8) {#each targetsToSearch as target, elemIndex}
 function create_each_block_5(ctx) {
 	let span;
 	let t0;
@@ -2980,16 +2125,16 @@ function create_each_block_5(ctx) {
 	let dispose;
 
 	function click_handler() {
-		return /*click_handler*/ ctx[28](/*elemIndex*/ ctx[73]);
+		return /*click_handler*/ ctx[31](/*elemIndex*/ ctx[76]);
 	}
 
 	return {
 		c() {
 			span = element("span");
 			t0 = text("Elem ");
-			t1 = text(/*elemIndex*/ ctx[73]);
+			t1 = text(/*elemIndex*/ ctx[76]);
 			t2 = space();
-			toggle_class(span, "selected", /*selectedElemIndex*/ ctx[4] === /*elemIndex*/ ctx[73]);
+			toggle_class(span, "selected", /*selectedElemIndex*/ ctx[4] === /*elemIndex*/ ctx[76]);
 		},
 		m(target, anchor) {
 			insert(target, span, anchor);
@@ -3006,7 +2151,7 @@ function create_each_block_5(ctx) {
 			ctx = new_ctx;
 
 			if (dirty[0] & /*selectedElemIndex*/ 16) {
-				toggle_class(span, "selected", /*selectedElemIndex*/ ctx[4] === /*elemIndex*/ ctx[73]);
+				toggle_class(span, "selected", /*selectedElemIndex*/ ctx[4] === /*elemIndex*/ ctx[76]);
 			}
 		},
 		d(detaching) {
@@ -3017,25 +2162,25 @@ function create_each_block_5(ctx) {
 	};
 }
 
-// (340:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
+// (377:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
 function create_each_block_4(ctx) {
 	let span;
-	let t_value = /*ruleName*/ ctx[68] + "";
+	let t_value = /*ruleName*/ ctx[71] + "";
 	let t;
 	let span_title_value;
 	let mounted;
 	let dispose;
 
 	function click_handler_1() {
-		return /*click_handler_1*/ ctx[29](/*ruleIndex*/ ctx[70]);
+		return /*click_handler_1*/ ctx[32](/*ruleIndex*/ ctx[73]);
 	}
 
 	return {
 		c() {
 			span = element("span");
 			t = text(t_value);
-			attr(span, "title", span_title_value = /*ruleName*/ ctx[68]);
-			toggle_class(span, "selected", /*selectedRuleIndex*/ ctx[5] === /*ruleIndex*/ ctx[70]);
+			attr(span, "title", span_title_value = /*ruleName*/ ctx[71]);
+			toggle_class(span, "selected", /*selectedRuleIndex*/ ctx[5] === /*ruleIndex*/ ctx[73]);
 		},
 		m(target, anchor) {
 			insert(target, span, anchor);
@@ -3048,14 +2193,14 @@ function create_each_block_4(ctx) {
 		},
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
-			if (dirty[0] & /*allRules, selectedElemIndex*/ 20 && t_value !== (t_value = /*ruleName*/ ctx[68] + "")) set_data(t, t_value);
+			if (dirty[0] & /*allRules, selectedElemIndex*/ 20 && t_value !== (t_value = /*ruleName*/ ctx[71] + "")) set_data(t, t_value);
 
-			if (dirty[0] & /*allRules, selectedElemIndex*/ 20 && span_title_value !== (span_title_value = /*ruleName*/ ctx[68])) {
+			if (dirty[0] & /*allRules, selectedElemIndex*/ 20 && span_title_value !== (span_title_value = /*ruleName*/ ctx[71])) {
 				attr(span, "title", span_title_value);
 			}
 
 			if (dirty[0] & /*selectedRuleIndex*/ 32) {
-				toggle_class(span, "selected", /*selectedRuleIndex*/ ctx[5] === /*ruleIndex*/ ctx[70]);
+				toggle_class(span, "selected", /*selectedRuleIndex*/ ctx[5] === /*ruleIndex*/ ctx[73]);
 			}
 		},
 		d(detaching) {
@@ -3066,17 +2211,17 @@ function create_each_block_4(ctx) {
 	};
 }
 
-// (349:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
-function create_each_block_3(ctx) {
+// (388:12) {#if type !== 'custom' || currentRule === 'inline'}
+function create_if_block_6(ctx) {
 	let span;
-	let t0_value = /*type*/ ctx[65] + "";
+	let t0_value = /*type*/ ctx[68] + "";
 	let t0;
 	let t1;
 	let mounted;
 	let dispose;
 
 	function click_handler_2() {
-		return /*click_handler_2*/ ctx[30](/*typeIndex*/ ctx[67]);
+		return /*click_handler_2*/ ctx[33](/*typeIndex*/ ctx[70]);
 	}
 
 	return {
@@ -3084,7 +2229,7 @@ function create_each_block_3(ctx) {
 			span = element("span");
 			t0 = text(t0_value);
 			t1 = space();
-			toggle_class(span, "selected", /*selectedTypeIndex*/ ctx[6] === /*typeIndex*/ ctx[67]);
+			toggle_class(span, "selected", /*selectedTypeIndex*/ ctx[6] === /*typeIndex*/ ctx[70]);
 		},
 		m(target, anchor) {
 			insert(target, span, anchor);
@@ -3098,10 +2243,10 @@ function create_each_block_3(ctx) {
 		},
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
-			if (dirty[0] & /*allTypes, selectedElemIndex*/ 24 && t0_value !== (t0_value = /*type*/ ctx[65] + "")) set_data(t0, t0_value);
+			if (dirty[0] & /*allTypes, selectedElemIndex*/ 24 && t0_value !== (t0_value = /*type*/ ctx[68] + "")) set_data(t0, t0_value);
 
 			if (dirty[0] & /*selectedTypeIndex*/ 64) {
-				toggle_class(span, "selected", /*selectedTypeIndex*/ ctx[6] === /*typeIndex*/ ctx[67]);
+				toggle_class(span, "selected", /*selectedTypeIndex*/ ctx[6] === /*typeIndex*/ ctx[70]);
 			}
 		},
 		d(detaching) {
@@ -3112,7 +2257,42 @@ function create_each_block_3(ctx) {
 	};
 }
 
-// (353:4) {#if allTypes[selectedElemIndex]}
+// (386:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
+function create_each_block_3(ctx) {
+	let if_block_anchor;
+	let if_block = (/*type*/ ctx[68] !== 'custom' || /*currentRule*/ ctx[7] === 'inline') && create_if_block_6(ctx);
+
+	return {
+		c() {
+			if (if_block) if_block.c();
+			if_block_anchor = empty();
+		},
+		m(target, anchor) {
+			if (if_block) if_block.m(target, anchor);
+			insert(target, if_block_anchor, anchor);
+		},
+		p(ctx, dirty) {
+			if (/*type*/ ctx[68] !== 'custom' || /*currentRule*/ ctx[7] === 'inline') {
+				if (if_block) {
+					if_block.p(ctx, dirty);
+				} else {
+					if_block = create_if_block_6(ctx);
+					if_block.c();
+					if_block.m(if_block_anchor.parentNode, if_block_anchor);
+				}
+			} else if (if_block) {
+				if_block.d(1);
+				if_block = null;
+			}
+		},
+		d(detaching) {
+			if (if_block) if_block.d(detaching);
+			if (detaching) detach(if_block_anchor);
+		}
+	};
+}
+
+// (393:4) {#if allTypes[selectedElemIndex]}
 function create_if_block(ctx) {
 	let div;
 	let t;
@@ -3154,7 +2334,7 @@ function create_if_block(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*allCurrentPropDefs, propsByType, updateCssRule*/ 155648) {
+			if (dirty[0] & /*allCurrentPropDefs, propsByType, updateProp*/ 155648) {
 				each_value = Object.entries(/*propsByType*/ ctx[13]);
 				let i;
 
@@ -3220,10 +2400,10 @@ function create_if_block(ctx) {
 	};
 }
 
-// (364:16) {:else}
+// (404:16) {:else}
 function create_else_block(ctx) {
 	let span;
-	let t_value = /*selectedName*/ ctx[56] + "";
+	let t_value = /*selectedName*/ ctx[59] + "";
 	let t;
 
 	return {
@@ -3236,7 +2416,7 @@ function create_else_block(ctx) {
 			append(span, t);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*propsByType*/ 8192 && t_value !== (t_value = /*selectedName*/ ctx[56] + "")) set_data(t, t_value);
+			if (dirty[0] & /*propsByType*/ 8192 && t_value !== (t_value = /*selectedName*/ ctx[59] + "")) set_data(t, t_value);
 		},
 		d(detaching) {
 			if (detaching) detach(span);
@@ -3244,13 +2424,13 @@ function create_else_block(ctx) {
 	};
 }
 
-// (358:16) {#if choices.props.length > 1}
+// (398:16) {#if choices.props.length > 1}
 function create_if_block_5(ctx) {
 	let div;
 	let select;
 	let mounted;
 	let dispose;
-	let each_value_2 = /*choices*/ ctx[55].props;
+	let each_value_2 = /*choices*/ ctx[58].props;
 	let each_blocks = [];
 
 	for (let i = 0; i < each_value_2.length; i += 1) {
@@ -3258,7 +2438,7 @@ function create_if_block_5(ctx) {
 	}
 
 	function change_handler(...args) {
-		return /*change_handler*/ ctx[31](/*choices*/ ctx[55], /*each_value*/ ctx[57], /*each_index*/ ctx[58], ...args);
+		return /*change_handler*/ ctx[34](/*choices*/ ctx[58], /*each_value*/ ctx[60], /*each_index*/ ctx[61], ...args);
 	}
 
 	return {
@@ -3287,7 +2467,7 @@ function create_if_block_5(ctx) {
 			ctx = new_ctx;
 
 			if (dirty[0] & /*propsByType*/ 8192) {
-				each_value_2 = /*choices*/ ctx[55].props;
+				each_value_2 = /*choices*/ ctx[58].props;
 				let i;
 
 				for (i = 0; i < each_value_2.length; i += 1) {
@@ -3318,10 +2498,10 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (360:24) {#each choices.props as propName, i}
+// (400:24) {#each choices.props as propName, i}
 function create_each_block_2(ctx) {
 	let option;
-	let t0_value = /*propName*/ ctx[62] + "";
+	let t0_value = /*propName*/ ctx[65] + "";
 	let t0;
 	let t1;
 	let option_selected_value;
@@ -3331,8 +2511,8 @@ function create_each_block_2(ctx) {
 			option = element("option");
 			t0 = text(t0_value);
 			t1 = space();
-			option.selected = option_selected_value = /*i*/ ctx[64] === /*choices*/ ctx[55].selected;
-			option.__value = /*i*/ ctx[64];
+			option.selected = option_selected_value = /*i*/ ctx[67] === /*choices*/ ctx[58].selected;
+			option.__value = /*i*/ ctx[67];
 			option.value = option.__value;
 		},
 		m(target, anchor) {
@@ -3341,9 +2521,9 @@ function create_each_block_2(ctx) {
 			append(option, t1);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*propsByType*/ 8192 && t0_value !== (t0_value = /*propName*/ ctx[62] + "")) set_data(t0, t0_value);
+			if (dirty[0] & /*propsByType*/ 8192 && t0_value !== (t0_value = /*propName*/ ctx[65] + "")) set_data(t0, t0_value);
 
-			if (dirty[0] & /*propsByType*/ 8192 && option_selected_value !== (option_selected_value = /*i*/ ctx[64] === /*choices*/ ctx[55].selected)) {
+			if (dirty[0] & /*propsByType*/ 8192 && option_selected_value !== (option_selected_value = /*i*/ ctx[67] === /*choices*/ ctx[58].selected)) {
 				option.selected = option_selected_value;
 			}
 		},
@@ -3353,18 +2533,18 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (379:46) 
+// (421:46) 
 function create_if_block_4(ctx) {
 	let colorpicker;
 	let current;
 
 	function func(...args) {
-		return /*func*/ ctx[34](/*selectedName*/ ctx[56], ...args);
+		return /*func*/ ctx[37](/*selectedName*/ ctx[59], ...args);
 	}
 
 	colorpicker = new ColorPicker$1({
 			props: {
-				value: /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].value,
+				value: /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].value,
 				onChange: func
 			}
 		});
@@ -3380,7 +2560,7 @@ function create_if_block_4(ctx) {
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
 			const colorpicker_changes = {};
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576) colorpicker_changes.value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].value;
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576) colorpicker_changes.value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].value;
 			if (dirty[0] & /*propsByType*/ 8192) colorpicker_changes.onChange = func;
 			colorpicker.$set(colorpicker_changes);
 		},
@@ -3399,12 +2579,12 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (373:47) 
+// (415:47) 
 function create_if_block_3(ctx) {
 	let select;
 	let mounted;
 	let dispose;
-	let each_value_1 = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].choices();
+	let each_value_1 = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].choices();
 	let each_blocks = [];
 
 	for (let i = 0; i < each_value_1.length; i += 1) {
@@ -3412,7 +2592,7 @@ function create_if_block_3(ctx) {
 	}
 
 	function change_handler_2(...args) {
-		return /*change_handler_2*/ ctx[33](/*selectedName*/ ctx[56], ...args);
+		return /*change_handler_2*/ ctx[36](/*selectedName*/ ctx[59], ...args);
 	}
 
 	return {
@@ -3439,7 +2619,7 @@ function create_if_block_3(ctx) {
 			ctx = new_ctx;
 
 			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576) {
-				each_value_1 = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].choices();
+				each_value_1 = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].choices();
 				let i;
 
 				for (i = 0; i < each_value_1.length; i += 1) {
@@ -3472,21 +2652,22 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (367:16) {#if propType === 'slider'}
+// (407:16) {#if propType === 'slider'}
 function create_if_block_2(ctx) {
 	let input;
-	let input_value_value;
 	let input_min_value;
 	let input_max_value;
+	let input_step_value;
+	let input_value_value;
 	let t0;
 	let span;
-	let t1_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].displayed + "";
+	let t1_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].displayed + "";
 	let t1;
 	let mounted;
 	let dispose;
 
 	function change_handler_1(...args) {
-		return /*change_handler_1*/ ctx[32](/*selectedName*/ ctx[56], ...args);
+		return /*change_handler_1*/ ctx[35](/*selectedName*/ ctx[59], ...args);
 	}
 
 	return {
@@ -3496,9 +2677,10 @@ function create_if_block_2(ctx) {
 			span = element("span");
 			t1 = text(t1_value);
 			attr(input, "type", "range");
-			input.value = input_value_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].value;
-			attr(input, "min", input_min_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].min);
-			attr(input, "max", input_max_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].max);
+			attr(input, "min", input_min_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].min);
+			attr(input, "max", input_max_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].max);
+			attr(input, "step", input_step_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].step || 1);
+			input.value = input_value_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].value;
 			attr(span, "class", "current-value");
 		},
 		m(target, anchor) {
@@ -3515,19 +2697,23 @@ function create_if_block_2(ctx) {
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
 
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && input_value_value !== (input_value_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].value)) {
-				input.value = input_value_value;
-			}
-
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && input_min_value !== (input_min_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].min)) {
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && input_min_value !== (input_min_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].min)) {
 				attr(input, "min", input_min_value);
 			}
 
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && input_max_value !== (input_max_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].max)) {
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && input_max_value !== (input_max_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].max)) {
 				attr(input, "max", input_max_value);
 			}
 
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && t1_value !== (t1_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].displayed + "")) set_data(t1, t1_value);
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && input_step_value !== (input_step_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].step || 1)) {
+				attr(input, "step", input_step_value);
+			}
+
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && input_value_value !== (input_value_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].value)) {
+				input.value = input_value_value;
+			}
+
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && t1_value !== (t1_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].displayed + "")) set_data(t1, t1_value);
 		},
 		i: noop$1,
 		o: noop$1,
@@ -3541,10 +2727,10 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (375:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
+// (417:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
 function create_each_block_1(ctx) {
 	let option;
-	let t_value = /*choice*/ ctx[59] + "";
+	let t_value = /*choice*/ ctx[62] + "";
 	let t;
 	let option_selected_value;
 	let option_value_value;
@@ -3553,8 +2739,8 @@ function create_each_block_1(ctx) {
 		c() {
 			option = element("option");
 			t = text(t_value);
-			option.selected = option_selected_value = /*choice*/ ctx[59] == /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].value || null;
-			option.__value = option_value_value = " " + /*choice*/ ctx[59] + " ";
+			option.selected = option_selected_value = /*choice*/ ctx[62] == /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].value || null;
+			option.__value = option_value_value = " " + /*choice*/ ctx[62] + " ";
 			option.value = option.__value;
 		},
 		m(target, anchor) {
@@ -3562,13 +2748,13 @@ function create_each_block_1(ctx) {
 			append(option, t);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && t_value !== (t_value = /*choice*/ ctx[59] + "")) set_data(t, t_value);
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && t_value !== (t_value = /*choice*/ ctx[62] + "")) set_data(t, t_value);
 
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && option_selected_value !== (option_selected_value = /*choice*/ ctx[59] == /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[56]].value || null)) {
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && option_selected_value !== (option_selected_value = /*choice*/ ctx[62] == /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[59]].value || null)) {
 				option.selected = option_selected_value;
 			}
 
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && option_value_value !== (option_value_value = " " + /*choice*/ ctx[59] + " ")) {
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && option_value_value !== (option_value_value = " " + /*choice*/ ctx[62] + " ")) {
 				option.__value = option_value_value;
 				option.value = option.__value;
 			}
@@ -3579,7 +2765,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (355:8) {#each Object.entries(propsByType) as [propType, choices]}
+// (395:8) {#each Object.entries(propsByType) as [propType, choices]}
 function create_each_block(ctx) {
 	let div;
 	let t;
@@ -3588,7 +2774,7 @@ function create_each_block(ctx) {
 	let current;
 
 	function select_block_type(ctx, dirty) {
-		if (/*choices*/ ctx[55].props.length > 1) return create_if_block_5;
+		if (/*choices*/ ctx[58].props.length > 1) return create_if_block_5;
 		return create_else_block;
 	}
 
@@ -3598,9 +2784,9 @@ function create_each_block(ctx) {
 	const if_blocks = [];
 
 	function select_block_type_1(ctx, dirty) {
-		if (/*propType*/ ctx[54] === 'slider') return 0;
-		if (/*propType*/ ctx[54] == 'select') return 1;
-		if (/*propType*/ ctx[54] == 'color') return 2;
+		if (/*propType*/ ctx[57] === 'slider') return 0;
+		if (/*propType*/ ctx[57] == 'select') return 1;
+		if (/*propType*/ ctx[57] == 'color') return 2;
 		return -1;
 	}
 
@@ -3695,7 +2881,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (387:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
+// (429:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
 function create_if_block_1(ctx) {
 	let div;
 	let mounted;
@@ -3754,7 +2940,7 @@ function create_fragment(ctx) {
 	let current;
 	let mounted;
 	let dispose;
-	let if_block0 = /*targetsToSearch*/ ctx[1].length > 1 && create_if_block_6(ctx);
+	let if_block0 = /*targetsToSearch*/ ctx[1].length > 1 && create_if_block_7(ctx);
 	let each_value_4 = getRuleNames(/*allRules*/ ctx[2][/*selectedElemIndex*/ ctx[4]]);
 	let each_blocks_1 = [];
 
@@ -3829,13 +3015,13 @@ function create_fragment(ctx) {
 		},
 		m(target, anchor) {
 			insert(target, div0, anchor);
-			/*div0_binding*/ ctx[26](div0);
+			/*div0_binding*/ ctx[29](div0);
 			insert(target, t0, anchor);
 			insert(target, svg, anchor);
 			append(svg, clipPath);
 			append(clipPath, path);
 			append(svg, rect);
-			/*svg_binding*/ ctx[27](svg);
+			/*svg_binding*/ ctx[30](svg);
 			insert(target, t1, anchor);
 			insert(target, div4, anchor);
 			append(div4, div1);
@@ -3861,7 +3047,7 @@ function create_fragment(ctx) {
 
 			append(div4, t10);
 			if (if_block1) if_block1.m(div4, null);
-			/*div4_binding*/ ctx[35](div4);
+			/*div4_binding*/ ctx[38](div4);
 			current = true;
 
 			if (!mounted) {
@@ -3890,7 +3076,7 @@ function create_fragment(ctx) {
 				if (if_block0) {
 					if_block0.p(ctx, dirty);
 				} else {
-					if_block0 = create_if_block_6(ctx);
+					if_block0 = create_if_block_7(ctx);
 					if_block0.c();
 					if_block0.m(div4, t4);
 				}
@@ -3899,7 +3085,7 @@ function create_fragment(ctx) {
 				if_block0 = null;
 			}
 
-			if (dirty[0] & /*allRules, selectedElemIndex, selectedRuleIndex*/ 52) {
+			if (dirty[0] & /*allRules, selectedElemIndex, selectedRuleIndex, selectRule*/ 524340) {
 				each_value_4 = getRuleNames(/*allRules*/ ctx[2][/*selectedElemIndex*/ ctx[4]]);
 				let i;
 
@@ -3922,7 +3108,7 @@ function create_fragment(ctx) {
 				each_blocks_1.length = each_value_4.length;
 			}
 
-			if (dirty[0] & /*selectedTypeIndex, allTypes, selectedElemIndex*/ 88) {
+			if (dirty[0] & /*selectedTypeIndex, allTypes, selectedElemIndex, currentRule*/ 216) {
 				each_value_3 = /*allTypes*/ ctx[3][/*selectedElemIndex*/ ctx[4]] || [];
 				let i;
 
@@ -3979,17 +3165,17 @@ function create_fragment(ctx) {
 		},
 		d(detaching) {
 			if (detaching) detach(div0);
-			/*div0_binding*/ ctx[26](null);
+			/*div0_binding*/ ctx[29](null);
 			if (detaching) detach(t0);
 			if (detaching) detach(svg);
-			/*svg_binding*/ ctx[27](null);
+			/*svg_binding*/ ctx[30](null);
 			if (detaching) detach(t1);
 			if (detaching) detach(div4);
 			if (if_block0) if_block0.d();
 			destroy_each(each_blocks_1, detaching);
 			destroy_each(each_blocks, detaching);
 			if (if_block1) if_block1.d();
-			/*div4_binding*/ ctx[35](null);
+			/*div4_binding*/ ctx[38](null);
 			mounted = false;
 			run_all(dispose);
 		}
@@ -4000,6 +3186,7 @@ const typeText = "text";
 const typeBorder = "border";
 const typeStroke = "stroke";
 const typeBackground = "background";
+const customType = "custom";
 
 function getRuleNames(rules) {
 	if (!rules) return [];
@@ -4124,19 +3311,22 @@ function instance($$self, $$props, $$invalidate) {
 		"background-color": { type: "color" }
 	};
 
-	const propByType = {
-		[typeText]: fontProps,
-		[typeBorder]: borderProps,
-		[typeStroke]: pathProps,
-		[typeBackground]: backgroundProps
-	};
-
 	let { getAdditionalElems = () => [] } = $$props;
 	let { listenOnClick = false } = $$props;
 
 	let { onStyleChanged = () => {
 		
 	} } = $$props;
+
+	let { customProps = {} } = $$props;
+
+	const propByType = {
+		[typeText]: fontProps,
+		[typeBorder]: borderProps,
+		[typeStroke]: pathProps,
+		[typeBackground]: backgroundProps,
+		[customType]: Object.keys(customProps)
+	};
 
 	let elementToListen = null;
 	let positionAnchor;
@@ -4159,7 +3349,7 @@ function instance($$self, $$props, $$invalidate) {
 
 	onMount(() => {
 		close();
-		$$invalidate(23, elementToListen = self.parentNode);
+		$$invalidate(26, elementToListen = self.parentNode);
 		document.body.appendChild(self);
 		document.body.appendChild(helperElemWrapper);
 		document.body.appendChild(positionAnchor);
@@ -4275,6 +3465,10 @@ function instance($$self, $$props, $$invalidate) {
 		$$invalidate(3, allTypes = getEditableTypes(targetsToSearch));
 		$$invalidate(2, allRules = getMatchedCSSRules(targetsToSearch));
 
+		if (Object.keys(customProps).length) {
+			allTypes[0].push(customType);
+		}
+
 		if (x && y) show(x, y); else {
 			const rect = getBoundingBoxInfos(el, 15);
 			show(rect.left, rect.top);
@@ -4285,6 +3479,10 @@ function instance($$self, $$props, $$invalidate) {
 		$$invalidate(9, self.style.display = "none", self);
 		$$invalidate(10, helperElemWrapper.style.display = "none", helperElemWrapper);
 		$$invalidate(11, pathWithHoles = '');
+	}
+
+	function isOpened() {
+		return self.style.display === 'block';
 	}
 
 	function overlayClicked() {
@@ -4319,21 +3517,25 @@ function instance($$self, $$props, $$invalidate) {
 		$$invalidate(11, pathWithHoles = computeContours(boundingBoxes, pageDimensions));
 	}
 
-	function _updateCssRule(cssPropName, val, suffix) {
+	function _updateProp(propName, val, suffix) {
 		const finalValue = suffix ? val + suffix : val;
 
 		if (currentRule === 'inline') {
-			const style = currentElement.style; // do not trigger reactivity on currentElement
-			style[cssPropName] = finalValue;
-		} else currentRule.style.setProperty(cssPropName, finalValue);
+			if (allCurrentPropDefs[propName].setter) {
+				allCurrentPropDefs[propName].setter(currentElement, val);
+			} else {
+				const style = currentElement.style; // do not trigger reactivity on currentElement
+				style[propName] = finalValue;
+			}
+		} else currentRule.style.setProperty(propName, finalValue);
 
-		$$invalidate(14, allCurrentPropDefs[cssPropName].value = val, allCurrentPropDefs);
-		$$invalidate(14, allCurrentPropDefs[cssPropName].displayed = finalValue, allCurrentPropDefs);
-		onStyleChanged(currentElement, currentRule, cssPropName, finalValue);
+		$$invalidate(14, allCurrentPropDefs[propName].value = val, allCurrentPropDefs);
+		$$invalidate(14, allCurrentPropDefs[propName].displayed = finalValue, allCurrentPropDefs);
+		onStyleChanged(currentElement, currentRule, propName, finalValue);
 		updateHelpers();
 	}
 
-	const updateCssRule = lodash_debounce(_updateCssRule, 100);
+	const updateProp = debounce(_updateProp, 100);
 
 	function udpatePageDimensions() {
 		const bodyStyle = getComputedStyle(document.body);
@@ -4364,6 +3566,16 @@ function instance($$self, $$props, $$invalidate) {
 		currentElement.parentNode.appendChild(currentElement);
 	}
 
+	function selectRule(ruleIndex) {
+		const newRule = allRules[selectedElemIndex]?.[ruleIndex];
+
+		if (newRule !== 'inline' && selectedTypeIndex === allTypes[selectedElemIndex].length - 1) {
+			$$invalidate(6, selectedTypeIndex = 0);
+		}
+
+		$$invalidate(5, selectedRuleIndex = ruleIndex);
+	}
+
 	function div0_binding($$value) {
 		binding_callbacks[$$value ? 'unshift' : 'push'](() => {
 			positionAnchor = $$value;
@@ -4384,17 +3596,21 @@ function instance($$self, $$props, $$invalidate) {
 	};
 
 	const click_handler_1 = ruleIndex => {
-		$$invalidate(5, selectedRuleIndex = ruleIndex);
+		selectRule(ruleIndex);
 	};
 
 	const click_handler_2 = typeIndex => {
 		$$invalidate(6, selectedTypeIndex = typeIndex);
 	};
 
-	const change_handler = (choices, each_value, each_index, e) => $$invalidate(13, each_value[each_index][1].selected = e.target.value, propsByType);
-	const change_handler_1 = (selectedName, e) => updateCssRule(selectedName, e.target.value, allCurrentPropDefs[selectedName].suffix, e.target);
-	const change_handler_2 = (selectedName, e) => updateCssRule(selectedName, e.target.value);
-	const func = (selectedName, color) => updateCssRule(selectedName, color);
+	const change_handler = async (choices, each_value, each_index, e) => {
+		$$invalidate(13, each_value[each_index][1].selected = e.target.value, propsByType);
+		await tick();
+	};
+
+	const change_handler_1 = (selectedName, e) => updateProp(selectedName, e.target.value, allCurrentPropDefs[selectedName].suffix, e.target);
+	const change_handler_2 = (selectedName, e) => updateProp(selectedName, e.target.value);
+	const func = (selectedName, color) => updateProp(selectedName, color);
 
 	function div4_binding($$value) {
 		binding_callbacks[$$value ? 'unshift' : 'push'](() => {
@@ -4404,13 +3620,14 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	$$self.$$set = $$props => {
-		if ('getAdditionalElems' in $$props) $$invalidate(19, getAdditionalElems = $$props.getAdditionalElems);
-		if ('listenOnClick' in $$props) $$invalidate(20, listenOnClick = $$props.listenOnClick);
-		if ('onStyleChanged' in $$props) $$invalidate(21, onStyleChanged = $$props.onStyleChanged);
+		if ('getAdditionalElems' in $$props) $$invalidate(20, getAdditionalElems = $$props.getAdditionalElems);
+		if ('listenOnClick' in $$props) $$invalidate(21, listenOnClick = $$props.listenOnClick);
+		if ('onStyleChanged' in $$props) $$invalidate(22, onStyleChanged = $$props.onStyleChanged);
+		if ('customProps' in $$props) $$invalidate(23, customProps = $$props.customProps);
 	};
 
 	$$self.$$.update = () => {
-		if ($$self.$$.dirty[0] & /*elementToListen*/ 8388608) {
+		if ($$self.$$.dirty[0] & /*elementToListen*/ 67108864) {
 			{
 				if (elementToListen !== null) {
 					init();
@@ -4419,32 +3636,46 @@ function instance($$self, $$props, $$invalidate) {
 		}
 
 		if ($$self.$$.dirty[0] & /*targetsToSearch, selectedElemIndex*/ 18) {
-			$$invalidate(25, currentElement = targetsToSearch[selectedElemIndex]);
+			$$invalidate(28, currentElement = targetsToSearch[selectedElemIndex]);
 		}
 
 		if ($$self.$$.dirty[0] & /*allRules, selectedElemIndex, selectedRuleIndex*/ 52) {
 			$$invalidate(7, currentRule = allRules[selectedElemIndex]?.[selectedRuleIndex]);
 		}
 
-		if ($$self.$$.dirty[0] & /*allTypes, selectedElemIndex, selectedTypeIndex, curType*/ 16777304) {
+		if ($$self.$$.dirty[0] & /*allTypes, selectedElemIndex, selectedTypeIndex, curType*/ 134217816) {
 			{
 				if (allTypes[selectedElemIndex]?.[selectedTypeIndex] !== curType) {
-					$$invalidate(24, curType = allTypes[selectedElemIndex]?.[selectedTypeIndex]);
+					$$invalidate(27, curType = allTypes[selectedElemIndex]?.[selectedTypeIndex]);
 				}
 			}
 		}
 
-		if ($$self.$$.dirty[0] & /*curType, currentRule, currentElement*/ 50331776) {
+		if ($$self.$$.dirty[0] & /*curType, currentRule, customProps, currentElement*/ 411041920) {
 			{
 				if (curType && currentRule) {
-					const _allCurrentPropDefs = lodash_pick(cssPropByType, propByType[curType]);
+					const allProps = { ...cssPropByType, ...customProps };
+					const _allCurrentPropDefs = pick(allProps, propByType[curType]);
 
 					Object.keys(_allCurrentPropDefs).forEach(key => {
-						_allCurrentPropDefs[key].displayed = getComputedPropValue(currentElement, key, 'raw');
 						const propSelectType = _allCurrentPropDefs[key].type;
 						let retrieveType = 'number';
 						if (propSelectType === 'color') retrieveType = 'rgb'; else if (propSelectType === 'select') retrieveType = 'raw';
-						_allCurrentPropDefs[key].value = getComputedPropValue(currentElement, key, retrieveType);
+
+						if (_allCurrentPropDefs[key].getter) {
+							const val = _allCurrentPropDefs[key].getter(currentElement);
+
+							if (val === null) {
+								delete _allCurrentPropDefs[key];
+								return;
+							}
+
+							_allCurrentPropDefs[key].value = val;
+							_allCurrentPropDefs[key].displayed = val;
+						} else {
+							_allCurrentPropDefs[key].displayed = getComputedPropValue(currentElement, key, 'raw');
+							_allCurrentPropDefs[key].value = getComputedPropValue(currentElement, key, retrieveType);
+						}
 					});
 
 					$$invalidate(13, propsByType = Object.entries(_allCurrentPropDefs).reduce(
@@ -4480,12 +3711,15 @@ function instance($$self, $$props, $$invalidate) {
 		allCurrentPropDefs,
 		bringableToFront,
 		overlayClicked,
-		updateCssRule,
+		updateProp,
 		bringToFront,
+		selectRule,
 		getAdditionalElems,
 		listenOnClick,
 		onStyleChanged,
+		customProps,
 		open,
+		isOpened,
 		elementToListen,
 		curType,
 		currentElement,
@@ -4513,11 +3747,13 @@ class InlineStyleEditor$1 extends SvelteComponent {
 			create_fragment,
 			safe_not_equal,
 			{
-				getAdditionalElems: 19,
-				listenOnClick: 20,
-				onStyleChanged: 21,
-				open: 22,
-				close: 0
+				getAdditionalElems: 20,
+				listenOnClick: 21,
+				onStyleChanged: 22,
+				customProps: 23,
+				open: 24,
+				close: 0,
+				isOpened: 25
 			},
 			null,
 			[-1, -1, -1]
@@ -4525,11 +3761,15 @@ class InlineStyleEditor$1 extends SvelteComponent {
 	}
 
 	get open() {
-		return this.$$.ctx[22];
+		return this.$$.ctx[24];
 	}
 
 	get close() {
 		return this.$$.ctx[0];
+	}
+
+	get isOpened() {
+		return this.$$.ctx[25];
 	}
 }
 

@@ -340,13 +340,44 @@
                         return [countryElem];
                     }
                     return [];
+                },
+                onStyleChanged(target, eventType, cssProp, value) {
+                    console.log(target, eventType, cssProp, value);
+                },
+                customProps: {
+                    'scale': {
+                        type: 'slider', min: 0.5, max: 5, step: 0.1,
+                        getter: (el) => {
+                            const transform = el.getAttribute('transform');
+                            if (!transform) return 1;
+                            else {
+                                let scaleValue = transformStr.match(/scale\(([0-9\.]+)\)/);
+                                if (scaleValue.length > 1) return parseFloat(scaleValue[1]);
+                            }
+                            return 1;
+                        },
+                        setter: (el, val) => {
+                            const transform = el.getAttribute('transform');
+                            const scaleStr = `scale(${val})`;
+                            if (!transform) {
+                                el.setAttribute("transform", scaleStr);
+                            }
+                            else if (transform.length && !transform.includes('scale')) {
+                                el.setAttribute("transform", `${transform} ${scaleStr}`);
+                            }
+                            else {
+                                const newAttr = transform.replace(/scale(.*)/, scaleStr);
+                                el.setAttribute("transform", newAttr);
+                            }
+                        }
+                    }
                 }
             }
         );
         document.body.addEventListener('click', (e) => {
             const target = e.target;
             editor.open(target, e.pageX, e.pageY);
-        }); 
+        });
     </script>
 </body>
 

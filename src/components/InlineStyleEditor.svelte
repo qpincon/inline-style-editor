@@ -1,9 +1,8 @@
 <script>
-    import '../assets/index.scss';
-    import { onMount, onDestroy } from "svelte";
-    import pick from 'lodash.pick';
-    import debounce from 'lodash.debounce';
+    import { onMount, onDestroy, tick } from "svelte";
 
+    import '../assets/index.scss';
+    import { pick, debounce } from '../util/util';
     import { computeContours } from '../util/boxesContour';
     import ColorPicker from './ColorPicker.svelte';
     import { getFonts } from '../util/fonts';
@@ -88,6 +87,10 @@
                 else if (propSelectType === 'select') retrieveType = 'raw';
                 if (_allCurrentPropDefs[key].getter) {
                     const val =  _allCurrentPropDefs[key].getter(currentElement);
+                    if (val === null) {
+                        delete _allCurrentPropDefs[key];
+                        return; 
+                    }
                     _allCurrentPropDefs[key].value = val;
                     _allCurrentPropDefs[key].displayed = val;
                 }
@@ -393,7 +396,7 @@ on:click={overlayClicked}>
         {@const selectedName = choices.props[choices.selected]}
             <div class="prop-section">
                 {#if choices.props.length > 1}
-                    <div> <select on:change="{(e) => choices.selected = e.target.value}">
+                    <div> <select on:change="{async (e) => {choices.selected = e.target.value; await tick();}}">
                         {#each choices.props as propName, i}
                             <option selected={i === choices.selected} value="{i}"> {propName} </option>
                         {/each}
@@ -402,10 +405,11 @@ on:click={overlayClicked}>
                     <span> { selectedName } </span>
                 {/if}
                 {#if propType === 'slider'}
-                    <input type=range value={allCurrentPropDefs[selectedName].value}
-                    min={allCurrentPropDefs[selectedName].min} 
-                    max={allCurrentPropDefs[selectedName].max}
-                    step={allCurrentPropDefs[selectedName].step || 1}
+                <input type=range
+                min={allCurrentPropDefs[selectedName].min} 
+                max={allCurrentPropDefs[selectedName].max}
+                step={allCurrentPropDefs[selectedName].step || 1}
+                value={allCurrentPropDefs[selectedName].value}
                     on:change={(e) => updateProp(selectedName, e.target.value, allCurrentPropDefs[selectedName].suffix, e.target)}/>
                     <span class="current-value"> { allCurrentPropDefs[selectedName].displayed } </span> 
                 {:else if propType == 'select'}
