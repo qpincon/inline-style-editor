@@ -13,6 +13,7 @@ const name = pkg.name
 
 export default [
     {
+        // input: 'src/components/InlineStyleEditor.svelte',
         input: 'src/index.js',
         output: [
         {

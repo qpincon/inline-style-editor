@@ -21,7 +21,7 @@
         "font-size": {type: "slider", min: 0, max: 30, suffix: 'px'},
         "font-weight": {type: "slider", min: 0, max: 500},
         "color": {type: "color"},
-        "stroke-width": {type: "slider", min: 0, max: 30, suffix: 'px'},
+        "stroke-width": {type: "slider", min: 0, max: 20, step: 0.5, suffix: 'px'},
         'stroke': {type: "color"},
         'fill': {type: "color"},
         "stroke-dasharray": {type: "slider", min: 0, max: 30, suffix: 'px'},
@@ -29,7 +29,7 @@
     };
     
 
-    export let getAdditionalElems = () => [];
+    export let getAdditionalElems = () => {return []};
     export let listenOnClick = false;
     export let onStyleChanged = () => {};
     export let customProps = {};
@@ -62,6 +62,7 @@
     let propsByType; // propType -> {[props], selected} 
     let allCurrentPropDefs = {}; // propName => selectorDef
     let bringableToFront = []; // null = not bringable, true = bringable, false = was bringed
+    let hasDisplayedCustom = false;
     $: {
         if (elementToListen !== null) {
             init();
@@ -218,7 +219,14 @@
         allRules = [];
         targetsToSearch = [el, ...getAdditionalElems(el)];
         allTypes = getEditableTypes(targetsToSearch);
+        hasDisplayedCustom = false;
         allRules = getMatchedCSSRules(targetsToSearch);
+        for (let def of Object.values(customProps)) {
+            if (def.getter(el) !== null) {
+                hasDisplayedCustom = true;
+                break;
+            }
+        }
         if (Object.keys(customProps).length) {
             allTypes[0].push(customType);
         }
@@ -385,7 +393,7 @@ on:click={overlayClicked}>
         <b> Property type: </b>
         {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
             <!-- Only display "custom" on "inline" rule -->
-            {#if type !== 'custom' || currentRule === 'inline'} 
+            {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )} 
                 <span class:selected="{selectedTypeIndex === typeIndex}" on:click="{() => {selectedTypeIndex = typeIndex;}}"> {type} </span>
             {/if}
         {/each}
