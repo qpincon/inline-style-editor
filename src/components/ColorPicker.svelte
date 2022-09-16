@@ -2,7 +2,7 @@
     import Picker from 'vanilla-picker/csp';
     
     import { onMount, onDestroy } from 'svelte';
-    
+
     export let value = "#AAAAAAFF";
     export let options = {};
     export let onChange = () => {};

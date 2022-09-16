@@ -1,22 +1,3 @@
-.layout_default.picker_wrapper {
-    background: none;
-    box-shadow: none;
-    width: 17em;
-
-    .picker_done {
-        display: none;
-    }
-
-    .picker_slider,
-    .picker_selector {
-        padding: 0.5em;
-    }
-
-    .picker_editor input {
-        font-size: 0.7rem;
-    }
-}
-
 .ise {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
     font-size: 14px;
@@ -128,6 +109,24 @@
         border-radius: 3px;
     }
 
+    .layout_default.picker_wrapper {
+        background: none;
+        box-shadow: none;
+        width: 17em;
+    
+        .picker_done {
+            display: none;
+        }
+    
+        .picker_slider,
+        .picker_selector {
+            padding: 0.5em;
+        }
+    
+        .picker_editor input {
+            font-size: 0.7rem;
+        }
+    }
 }
 
 .ise-helper-wrapper {
