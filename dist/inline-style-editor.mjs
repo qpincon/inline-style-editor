@@ -2050,7 +2050,7 @@ function get_each_context_5(ctx, list, i) {
 	return child_ctx;
 }
 
-// (373:4) {#if targetsToSearch.length > 1}
+// (372:4) {#if targetsToSearch.length > 1}
 function create_if_block_7(ctx) {
 	let div;
 	let b;
@@ -2115,7 +2115,7 @@ function create_if_block_7(ctx) {
 	};
 }
 
-// (376:8) {#each targetsToSearch as target, elemIndex}
+// (375:8) {#each targetsToSearch as target, elemIndex}
 function create_each_block_5(ctx) {
 	let span;
 	let t0;
@@ -2162,7 +2162,7 @@ function create_each_block_5(ctx) {
 	};
 }
 
-// (385:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
+// (384:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
 function create_each_block_4(ctx) {
 	let span;
 	let t_value = /*ruleName*/ ctx[72] + "";
@@ -2211,7 +2211,7 @@ function create_each_block_4(ctx) {
 	};
 }
 
-// (396:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
+// (395:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
 function create_if_block_6(ctx) {
 	let span;
 	let t0_value = /*type*/ ctx[69] + "";
@@ -2257,7 +2257,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (394:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
+// (393:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
 function create_each_block_3(ctx) {
 	let if_block_anchor;
 	let if_block = (/*type*/ ctx[69] !== 'custom' || /*currentRule*/ ctx[7] === 'inline' && /*type*/ ctx[69] === 'custom' && /*hasDisplayedCustom*/ ctx[16]) && create_if_block_6(ctx);
@@ -2292,7 +2292,7 @@ function create_each_block_3(ctx) {
 	};
 }
 
-// (401:4) {#if allTypes[selectedElemIndex]}
+// (400:4) {#if allTypes[selectedElemIndex]}
 function create_if_block(ctx) {
 	let div;
 	let t;
@@ -2400,7 +2400,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (412:16) {:else}
+// (411:16) {:else}
 function create_else_block(ctx) {
 	let span;
 	let t_value = /*selectedName*/ ctx[60] + "";
@@ -2424,7 +2424,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (406:16) {#if choices.props.length > 1}
+// (405:16) {#if choices.props.length > 1}
 function create_if_block_5(ctx) {
 	let div;
 	let select;
@@ -2498,7 +2498,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (408:24) {#each choices.props as propName, i}
+// (407:24) {#each choices.props as propName, i}
 function create_each_block_2(ctx) {
 	let option;
 	let t0_value = /*propName*/ ctx[66] + "";
@@ -2533,7 +2533,7 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (429:46) 
+// (428:46) 
 function create_if_block_4(ctx) {
 	let colorpicker;
 	let current;
@@ -2579,7 +2579,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (423:47) 
+// (422:47) 
 function create_if_block_3(ctx) {
 	let select;
 	let mounted;
@@ -2652,7 +2652,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (415:16) {#if propType === 'slider'}
+// (414:16) {#if propType === 'slider'}
 function create_if_block_2(ctx) {
 	let input;
 	let input_min_value;
@@ -2727,7 +2727,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (425:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
+// (424:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
 function create_each_block_1(ctx) {
 	let option;
 	let t_value = /*choice*/ ctx[63] + "";
@@ -2765,7 +2765,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (403:8) {#each Object.entries(propsByType) as [propType, choices]}
+// (402:8) {#each Object.entries(propsByType) as [propType, choices]}
 function create_each_block(ctx) {
 	let div;
 	let t;
@@ -2881,7 +2881,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (437:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
+// (436:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
 function create_if_block_1(ctx) {
 	let div;
 	let mounted;
@@ -3394,9 +3394,10 @@ function instance($$self, $$props, $$invalidate) {
 						const rules = sheets[i].cssRules;
 
 						for (let r in rules) {
-							const selectorText = rules[r].selectorText;
+							let selectorText = rules[r].selectorText;
 							if (!selectorText || rules[r].selectorText.length > 50) continue; // skip selectors too long
 							if (selectorText.split(',').some(selector => selector === '*')) continue; // skip * selector
+							if (selectorText.endsWith(':hover')) selectorText = selectorText.substring(0, selectorText.length - (':hover').length);
 
 							if (el.matches(selectorText)) {
 								matchedRules.push(rules[r]);

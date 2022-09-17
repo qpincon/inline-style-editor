@@ -153,11 +153,10 @@
                 try {
                     const rules = sheets[i].cssRules;
                     for (let r in rules) {
-                        const selectorText = rules[r].selectorText;
-                        if (!selectorText || rules[r].selectorText.length > 50)
-                        continue; // skip selectors too long
-                        if (selectorText.split(',').some(selector => selector === '*'))
-                        continue; // skip * selector
+                        let selectorText = rules[r].selectorText;
+                        if (!selectorText || rules[r].selectorText.length > 50) continue; // skip selectors too long
+                        if (selectorText.split(',').some(selector => selector === '*')) continue; // skip * selector
+                        if (selectorText.endsWith(':hover')) selectorText = selectorText.substring(0, selectorText.length - ':hover'.length);
                         if (el.matches(selectorText)) {
                             matchedRules.push(rules[r]);
                         }
