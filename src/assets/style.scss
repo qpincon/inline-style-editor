@@ -32,6 +32,11 @@
     }
     input[type="range"] {
         width: 100%;
+        margin: auto;
+    }
+    .delete {
+        cursor: pointer;
+        font-size: 20px;
     }
     .select-tab {
         display: flex;
@@ -70,6 +75,7 @@
         display: flex;
         align-items: center;
         margin: 5px 0;
+        align-items: baseline;
     }
     
     .editor .prop-section>span {

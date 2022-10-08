@@ -14,7 +14,27 @@ function getFonts() {
         }
     }
 
-    return [...availableFonts.values()]
+    return [...listFonts(), ...availableFonts.values()]
+}
+
+function listFonts() {
+    let { fonts } = document;
+    const it = fonts.entries();
+
+    let arr = [];
+    let done = false;
+
+    while (!done) {
+        const font = it.next();
+        if (!font.done) {
+            arr.push(font.value[0].family);
+        } else {
+            done = font.done;
+        }
+    }
+
+    // converted to set then arr to filter repetitive values
+    return [...new Set(arr)];
 }
 
 export { getFonts };

@@ -18,8 +18,8 @@
         "border-style": {type: 'select', choices: () => ["none", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset",]},
         "border-color": {type: "color"},
         "font-family": { type: 'select', choices: getFontFamilies},
-        "font-size": {type: "slider", min: 0, max: 30, suffix: 'px'},
-        "font-weight": {type: "slider", min: 0, max: 500},
+        "font-size": {type: "slider", min: 0, max: 40, suffix: 'px'},
+        "font-weight": {type: "slider", min: 0, max: 800},
         "color": {type: "color"},
         "stroke-width": {type: "slider", min: 0, max: 20, step: 0.5, suffix: 'px'},
         'stroke': {type: "color"},
@@ -79,36 +79,7 @@
     }
     $: {
         if (curType && currentRule) {
-            const allProps = {...cssPropByType, ...customProps};
-            const _allCurrentPropDefs = pick(allProps, propByType[curType]);
-            Object.keys(_allCurrentPropDefs).forEach(key => {
-                const propSelectType = _allCurrentPropDefs[key].type;
-                let retrieveType = 'number';
-                if (propSelectType === 'color') retrieveType = 'rgb';
-                else if (propSelectType === 'select') retrieveType = 'raw';
-                if (_allCurrentPropDefs[key].getter) {
-                    const val =  _allCurrentPropDefs[key].getter(currentElement);
-                    if (val === null) {
-                        delete _allCurrentPropDefs[key];
-                        return; 
-                    }
-                    _allCurrentPropDefs[key].value = val;
-                    _allCurrentPropDefs[key].displayed = val;
-                }
-                else {
-                    _allCurrentPropDefs[key].displayed = getComputedPropValue(currentElement, key, 'raw');
-                    _allCurrentPropDefs[key].value = getComputedPropValue(currentElement, key, retrieveType);
-                }
-            });
-            
-            propsByType = Object.entries(_allCurrentPropDefs).reduce((byType, [propName, selectorDef]) => {
-                const selectorType = selectorDef.type;
-                if (!(selectorType in byType)) byType[selectorType] = {selected: 0, props: [propName]};
-                else byType[selectorType].props.push(propName);
-                return byType;
-            }, {});
-            allCurrentPropDefs = _allCurrentPropDefs;
-            updateHelpers();
+            initAndGroup();
         }
     }
     
@@ -133,6 +104,39 @@
 
     function getFontFamilies() {
         return getFonts();
+    }
+
+    function initAndGroup(){
+        const allProps = {...cssPropByType, ...customProps};
+        const _allCurrentPropDefs = pick(allProps, propByType[curType]);
+        Object.keys(_allCurrentPropDefs).forEach(key => {
+            const propSelectType = _allCurrentPropDefs[key].type;
+            let retrieveType = 'number';
+            if (propSelectType === 'color') retrieveType = 'rgb';
+            else if (propSelectType === 'select') retrieveType = 'raw';
+            if (_allCurrentPropDefs[key].getter) {
+                const val =  _allCurrentPropDefs[key].getter(currentElement);
+                if (val === null) {
+                    delete _allCurrentPropDefs[key];
+                    return; 
+                }
+                _allCurrentPropDefs[key].value = val;
+                _allCurrentPropDefs[key].displayed = val;
+            }
+            else {
+                _allCurrentPropDefs[key].displayed = getComputedPropValue(currentElement, key, 'raw');
+                _allCurrentPropDefs[key].value = getComputedPropValue(currentElement, key, retrieveType);
+            }
+        });
+        
+        propsByType = Object.entries(_allCurrentPropDefs).reduce((byType, [propName, selectorDef]) => {
+            const selectorType = selectorDef.type;
+            if (!(selectorType in byType)) byType[selectorType] = {selected: 0, props: [propName]};
+            else byType[selectorType].props.push(propName);
+            return byType;
+        }, {});
+        allCurrentPropDefs = _allCurrentPropDefs;
+        updateHelpers();
     }
 
     function getRuleNames(rules) {
@@ -348,6 +352,16 @@
         bringableToFront[selectedElemIndex] = false;
         currentElement.parentNode.appendChild(currentElement);
     }
+
+    function deleteProp(propName) {
+        if (currentRule === 'inline') {
+            currentElement.style.removeProperty(propName)
+        }
+        else {
+            currentRule.style.removeProperty(propName);
+        }
+        initAndGroup();
+    }
     
     function selectRule(ruleIndex) {
         const newRule = allRules[selectedElemIndex]?.[ruleIndex];
@@ -413,13 +427,15 @@ on:click={overlayClicked}>
                 {:else}
                     <span> { selectedName } </span>
                 {/if}
+                <span class="delete" on:click={() => deleteProp(selectedName)}>✕</span>
                 {#if propType === 'slider'}
-                <input type=range
-                min={allCurrentPropDefs[selectedName].min} 
-                max={allCurrentPropDefs[selectedName].max}
-                step={allCurrentPropDefs[selectedName].step || 1}
-                value={allCurrentPropDefs[selectedName].value}
-                    on:change={(e) => updateProp(selectedName, e.target.value, allCurrentPropDefs[selectedName].suffix, e.target)}/>
+                    <input type=range
+                        min={allCurrentPropDefs[selectedName].min} 
+                        max={allCurrentPropDefs[selectedName].max}
+                        step={allCurrentPropDefs[selectedName].step || 1}
+                        value={allCurrentPropDefs[selectedName].value}
+                        on:change={(e) => updateProp(selectedName, e.target.value, allCurrentPropDefs[selectedName].suffix, e.target)}
+                    />
                     <span class="current-value"> { allCurrentPropDefs[selectedName].displayed } </span> 
                 {:else if propType == 'select'}
                     <select on:change={(e) => updateProp(selectedName, e.target.value)}>
