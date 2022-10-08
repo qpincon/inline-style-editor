@@ -23,7 +23,7 @@
     }
     
     function _onChange(color) {
-        setValue(color.rgbaString);
+        setValue(color.hex);
     }
     
     onMount( () => {

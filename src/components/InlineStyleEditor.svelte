@@ -108,6 +108,7 @@
                 return byType;
             }, {});
             allCurrentPropDefs = _allCurrentPropDefs;
+            updateHelpers();
         }
     }
     
@@ -259,7 +260,8 @@
         self.style.display = "block";
     }
 
-    function updateHelpers() {
+    async function updateHelpers() {
+        await tick();
         if (!currentRule) return;
         let matching;
         if (currentRule === 'inline') matching = [currentElement];

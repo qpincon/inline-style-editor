@@ -1,4 +1,3 @@
-
 import parsePath from 'parse-svg-path';
 
 export function simplifyLinesPath(path) {

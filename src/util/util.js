@@ -1,5 +1,3 @@
-
-
 function pick(obj, keys) {
     return keys.reduce((picked, curKey) => {
         picked[curKey] = obj[curKey];
