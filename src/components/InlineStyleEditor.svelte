@@ -70,7 +70,6 @@
     }
     $: currentElement = targetsToSearch[selectedElemIndex];
     $: currentRule = allRules[selectedElemIndex]?.[selectedRuleIndex];
-    // $: curType = allTypes[selectedElemIndex]?.[selectedTypeIndex];
     let curType;
     $: {
         if (allTypes[selectedElemIndex]?.[selectedTypeIndex] !== curType) {
@@ -78,7 +77,7 @@
         };
     }
     $: {
-        if (curType && currentRule) {
+        if (curType || selectedRuleIndex || selectedElemIndex) {
             initAndGroup();
         }
     }

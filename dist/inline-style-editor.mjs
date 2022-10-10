@@ -2070,7 +2070,7 @@ function get_each_context_5(ctx, list, i) {
 	return child_ctx;
 }
 
-// (388:4) {#if targetsToSearch.length > 1}
+// (387:4) {#if targetsToSearch.length > 1}
 function create_if_block_7(ctx) {
 	let div;
 	let b;
@@ -2135,7 +2135,7 @@ function create_if_block_7(ctx) {
 	};
 }
 
-// (391:8) {#each targetsToSearch as target, elemIndex}
+// (390:8) {#each targetsToSearch as target, elemIndex}
 function create_each_block_5(ctx) {
 	let span;
 	let t0;
@@ -2182,7 +2182,7 @@ function create_each_block_5(ctx) {
 	};
 }
 
-// (400:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
+// (399:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
 function create_each_block_4(ctx) {
 	let span;
 	let t_value = /*ruleName*/ ctx[75] + "";
@@ -2231,7 +2231,7 @@ function create_each_block_4(ctx) {
 	};
 }
 
-// (411:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
+// (410:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
 function create_if_block_6(ctx) {
 	let span;
 	let t0_value = /*type*/ ctx[72] + "";
@@ -2277,10 +2277,10 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (409:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
+// (408:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
 function create_each_block_3(ctx) {
 	let if_block_anchor;
-	let if_block = (/*type*/ ctx[72] !== 'custom' || /*currentRule*/ ctx[7] === 'inline' && /*type*/ ctx[72] === 'custom' && /*hasDisplayedCustom*/ ctx[16]) && create_if_block_6(ctx);
+	let if_block = (/*type*/ ctx[72] !== 'custom' || /*currentRule*/ ctx[16] === 'inline' && /*type*/ ctx[72] === 'custom' && /*hasDisplayedCustom*/ ctx[15]) && create_if_block_6(ctx);
 
 	return {
 		c() {
@@ -2292,7 +2292,7 @@ function create_each_block_3(ctx) {
 			insert(target, if_block_anchor, anchor);
 		},
 		p(ctx, dirty) {
-			if (/*type*/ ctx[72] !== 'custom' || /*currentRule*/ ctx[7] === 'inline' && /*type*/ ctx[72] === 'custom' && /*hasDisplayedCustom*/ ctx[16]) {
+			if (/*type*/ ctx[72] !== 'custom' || /*currentRule*/ ctx[16] === 'inline' && /*type*/ ctx[72] === 'custom' && /*hasDisplayedCustom*/ ctx[15]) {
 				if (if_block) {
 					if_block.p(ctx, dirty);
 				} else {
@@ -2312,12 +2312,12 @@ function create_each_block_3(ctx) {
 	};
 }
 
-// (416:4) {#if allTypes[selectedElemIndex]}
+// (415:4) {#if allTypes[selectedElemIndex]}
 function create_if_block(ctx) {
 	let div;
 	let t;
 	let current;
-	let each_value = Object.entries(/*propsByType*/ ctx[13]);
+	let each_value = Object.entries(/*propsByType*/ ctx[12]);
 	let each_blocks = [];
 
 	for (let i = 0; i < each_value.length; i += 1) {
@@ -2328,7 +2328,7 @@ function create_if_block(ctx) {
 		each_blocks[i] = null;
 	});
 
-	let if_block = /*currentRule*/ ctx[7] === 'inline' && /*bringableToFront*/ ctx[15][/*selectedElemIndex*/ ctx[4]] !== null && create_if_block_1(ctx);
+	let if_block = /*currentRule*/ ctx[16] === 'inline' && /*bringableToFront*/ ctx[14][/*selectedElemIndex*/ ctx[4]] !== null && create_if_block_1(ctx);
 
 	return {
 		c() {
@@ -2354,8 +2354,8 @@ function create_if_block(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*allCurrentPropDefs, propsByType, updateProp, deleteProp*/ 1335296) {
-				each_value = Object.entries(/*propsByType*/ ctx[13]);
+			if (dirty[0] & /*allCurrentPropDefs, propsByType, updateProp, deleteProp*/ 1323008) {
+				each_value = Object.entries(/*propsByType*/ ctx[12]);
 				let i;
 
 				for (i = 0; i < each_value.length; i += 1) {
@@ -2381,7 +2381,7 @@ function create_if_block(ctx) {
 				check_outros();
 			}
 
-			if (/*currentRule*/ ctx[7] === 'inline' && /*bringableToFront*/ ctx[15][/*selectedElemIndex*/ ctx[4]] !== null) {
+			if (/*currentRule*/ ctx[16] === 'inline' && /*bringableToFront*/ ctx[14][/*selectedElemIndex*/ ctx[4]] !== null) {
 				if (if_block) {
 					if_block.p(ctx, dirty);
 				} else {
@@ -2420,7 +2420,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (427:16) {:else}
+// (426:16) {:else}
 function create_else_block(ctx) {
 	let span;
 	let t_value = /*selectedName*/ ctx[63] + "";
@@ -2436,7 +2436,7 @@ function create_else_block(ctx) {
 			append(span, t);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*propsByType*/ 8192 && t_value !== (t_value = /*selectedName*/ ctx[63] + "")) set_data(t, t_value);
+			if (dirty[0] & /*propsByType*/ 4096 && t_value !== (t_value = /*selectedName*/ ctx[63] + "")) set_data(t, t_value);
 		},
 		d(detaching) {
 			if (detaching) detach(span);
@@ -2444,7 +2444,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (421:16) {#if choices.props.length > 1}
+// (420:16) {#if choices.props.length > 1}
 function create_if_block_5(ctx) {
 	let div;
 	let select;
@@ -2486,7 +2486,7 @@ function create_if_block_5(ctx) {
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
 
-			if (dirty[0] & /*propsByType*/ 8192) {
+			if (dirty[0] & /*propsByType*/ 4096) {
 				each_value_2 = /*choices*/ ctx[62].props;
 				let i;
 
@@ -2518,7 +2518,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (423:24) {#each choices.props as propName, i}
+// (422:24) {#each choices.props as propName, i}
 function create_each_block_2(ctx) {
 	let option;
 	let t0_value = /*propName*/ ctx[69] + "";
@@ -2541,9 +2541,9 @@ function create_each_block_2(ctx) {
 			append(option, t1);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*propsByType*/ 8192 && t0_value !== (t0_value = /*propName*/ ctx[69] + "")) set_data(t0, t0_value);
+			if (dirty[0] & /*propsByType*/ 4096 && t0_value !== (t0_value = /*propName*/ ctx[69] + "")) set_data(t0, t0_value);
 
-			if (dirty[0] & /*propsByType*/ 8192 && option_selected_value !== (option_selected_value = /*i*/ ctx[71] === /*choices*/ ctx[62].selected)) {
+			if (dirty[0] & /*propsByType*/ 4096 && option_selected_value !== (option_selected_value = /*i*/ ctx[71] === /*choices*/ ctx[62].selected)) {
 				option.selected = option_selected_value;
 			}
 		},
@@ -2553,7 +2553,7 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (446:46) 
+// (445:46) 
 function create_if_block_4(ctx) {
 	let colorpicker;
 	let current;
@@ -2564,7 +2564,7 @@ function create_if_block_4(ctx) {
 
 	colorpicker = new ColorPicker$1({
 			props: {
-				value: /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].value,
+				value: /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].value,
 				onChange: func
 			}
 		});
@@ -2580,8 +2580,8 @@ function create_if_block_4(ctx) {
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
 			const colorpicker_changes = {};
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576) colorpicker_changes.value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].value;
-			if (dirty[0] & /*propsByType*/ 8192) colorpicker_changes.onChange = func;
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 12288) colorpicker_changes.value = /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].value;
+			if (dirty[0] & /*propsByType*/ 4096) colorpicker_changes.onChange = func;
 			colorpicker.$set(colorpicker_changes);
 		},
 		i(local) {
@@ -2599,12 +2599,12 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (440:47) 
+// (439:47) 
 function create_if_block_3(ctx) {
 	let select;
 	let mounted;
 	let dispose;
-	let each_value_1 = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].choices();
+	let each_value_1 = /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].choices();
 	let each_blocks = [];
 
 	for (let i = 0; i < each_value_1.length; i += 1) {
@@ -2638,8 +2638,8 @@ function create_if_block_3(ctx) {
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
 
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576) {
-				each_value_1 = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].choices();
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 12288) {
+				each_value_1 = /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].choices();
 				let i;
 
 				for (i = 0; i < each_value_1.length; i += 1) {
@@ -2672,7 +2672,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (431:16) {#if propType === 'slider'}
+// (430:16) {#if propType === 'slider'}
 function create_if_block_2(ctx) {
 	let input;
 	let input_min_value;
@@ -2681,7 +2681,7 @@ function create_if_block_2(ctx) {
 	let input_value_value;
 	let t0;
 	let span;
-	let t1_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].displayed + "";
+	let t1_value = /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].displayed + "";
 	let t1;
 	let mounted;
 	let dispose;
@@ -2697,10 +2697,10 @@ function create_if_block_2(ctx) {
 			span = element("span");
 			t1 = text(t1_value);
 			attr(input, "type", "range");
-			attr(input, "min", input_min_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].min);
-			attr(input, "max", input_max_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].max);
-			attr(input, "step", input_step_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].step || 1);
-			input.value = input_value_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].value;
+			attr(input, "min", input_min_value = /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].min);
+			attr(input, "max", input_max_value = /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].max);
+			attr(input, "step", input_step_value = /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].step || 1);
+			input.value = input_value_value = /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].value;
 			attr(span, "class", "current-value");
 		},
 		m(target, anchor) {
@@ -2717,23 +2717,23 @@ function create_if_block_2(ctx) {
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
 
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && input_min_value !== (input_min_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].min)) {
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 12288 && input_min_value !== (input_min_value = /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].min)) {
 				attr(input, "min", input_min_value);
 			}
 
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && input_max_value !== (input_max_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].max)) {
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 12288 && input_max_value !== (input_max_value = /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].max)) {
 				attr(input, "max", input_max_value);
 			}
 
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && input_step_value !== (input_step_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].step || 1)) {
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 12288 && input_step_value !== (input_step_value = /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].step || 1)) {
 				attr(input, "step", input_step_value);
 			}
 
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && input_value_value !== (input_value_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].value)) {
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 12288 && input_value_value !== (input_value_value = /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].value)) {
 				input.value = input_value_value;
 			}
 
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && t1_value !== (t1_value = /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].displayed + "")) set_data(t1, t1_value);
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 12288 && t1_value !== (t1_value = /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].displayed + "")) set_data(t1, t1_value);
 		},
 		i: noop$1,
 		o: noop$1,
@@ -2747,7 +2747,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (442:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
+// (441:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
 function create_each_block_1(ctx) {
 	let option;
 	let t_value = /*choice*/ ctx[66] + "";
@@ -2759,7 +2759,7 @@ function create_each_block_1(ctx) {
 		c() {
 			option = element("option");
 			t = text(t_value);
-			option.selected = option_selected_value = /*choice*/ ctx[66] == /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].value || null;
+			option.selected = option_selected_value = /*choice*/ ctx[66] == /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].value || null;
 			option.__value = option_value_value = " " + /*choice*/ ctx[66] + " ";
 			option.value = option.__value;
 		},
@@ -2768,13 +2768,13 @@ function create_each_block_1(ctx) {
 			append(option, t);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && t_value !== (t_value = /*choice*/ ctx[66] + "")) set_data(t, t_value);
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 12288 && t_value !== (t_value = /*choice*/ ctx[66] + "")) set_data(t, t_value);
 
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && option_selected_value !== (option_selected_value = /*choice*/ ctx[66] == /*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[63]].value || null)) {
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 12288 && option_selected_value !== (option_selected_value = /*choice*/ ctx[66] == /*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].value || null)) {
 				option.selected = option_selected_value;
 			}
 
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 24576 && option_value_value !== (option_value_value = " " + /*choice*/ ctx[66] + " ")) {
+			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 12288 && option_value_value !== (option_value_value = " " + /*choice*/ ctx[66] + " ")) {
 				option.__value = option_value_value;
 				option.value = option.__value;
 			}
@@ -2785,7 +2785,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (418:8) {#each Object.entries(propsByType) as [propType, choices]}
+// (417:8) {#each Object.entries(propsByType) as [propType, choices]}
 function create_each_block(ctx) {
 	let div;
 	let t0;
@@ -2926,7 +2926,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (454:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
+// (453:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
 function create_if_block_1(ctx) {
 	let div;
 	let mounted;
@@ -2937,7 +2937,7 @@ function create_if_block_1(ctx) {
 			div = element("div");
 			div.textContent = "Bring to front";
 			attr(div, "class", "btn");
-			toggle_class(div, "active", /*bringableToFront*/ ctx[15][/*selectedElemIndex*/ ctx[4]] === true);
+			toggle_class(div, "active", /*bringableToFront*/ ctx[14][/*selectedElemIndex*/ ctx[4]] === true);
 		},
 		m(target, anchor) {
 			insert(target, div, anchor);
@@ -2948,8 +2948,8 @@ function create_if_block_1(ctx) {
 			}
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*bringableToFront, selectedElemIndex*/ 32784) {
-				toggle_class(div, "active", /*bringableToFront*/ ctx[15][/*selectedElemIndex*/ ctx[4]] === true);
+			if (dirty[0] & /*bringableToFront, selectedElemIndex*/ 16400) {
+				toggle_class(div, "active", /*bringableToFront*/ ctx[14][/*selectedElemIndex*/ ctx[4]] === true);
 			}
 		},
 		d(detaching) {
@@ -3039,7 +3039,7 @@ function create_fragment(ctx) {
 			t10 = space();
 			if (if_block1) if_block1.c();
 			set_style(div0, "position", "absolute");
-			attr(path, "d", /*pathWithHoles*/ ctx[11]);
+			attr(path, "d", /*pathWithHoles*/ ctx[10]);
 			attr(clipPath, "id", "overlay-clip");
 			attr(clipPath, "clip-rule", "evenodd");
 			attr(rect, "y", "0");
@@ -3051,8 +3051,8 @@ function create_fragment(ctx) {
 			attr(svg, "version", "1.1");
 			attr(svg, "xmlns", "http://www.w3.org/2000/svg");
 			attr(svg, "xmlns:xlink", "http://www.w3.org/1999/xlink");
-			attr(svg, "width", svg_width_value = /*pageDimensions*/ ctx[12].width);
-			attr(svg, "height", svg_height_value = /*pageDimensions*/ ctx[12].height);
+			attr(svg, "width", svg_width_value = /*pageDimensions*/ ctx[11].width);
+			attr(svg, "height", svg_height_value = /*pageDimensions*/ ctx[11].height);
 			attr(div1, "class", "close-button");
 			attr(div2, "class", "select-tab");
 			attr(div3, "class", "select-tab");
@@ -3105,15 +3105,15 @@ function create_fragment(ctx) {
 			}
 		},
 		p(ctx, dirty) {
-			if (!current || dirty[0] & /*pathWithHoles*/ 2048) {
-				attr(path, "d", /*pathWithHoles*/ ctx[11]);
+			if (!current || dirty[0] & /*pathWithHoles*/ 1024) {
+				attr(path, "d", /*pathWithHoles*/ ctx[10]);
 			}
 
-			if (!current || dirty[0] & /*pageDimensions*/ 4096 && svg_width_value !== (svg_width_value = /*pageDimensions*/ ctx[12].width)) {
+			if (!current || dirty[0] & /*pageDimensions*/ 2048 && svg_width_value !== (svg_width_value = /*pageDimensions*/ ctx[11].width)) {
 				attr(svg, "width", svg_width_value);
 			}
 
-			if (!current || dirty[0] & /*pageDimensions*/ 4096 && svg_height_value !== (svg_height_value = /*pageDimensions*/ ctx[12].height)) {
+			if (!current || dirty[0] & /*pageDimensions*/ 2048 && svg_height_value !== (svg_height_value = /*pageDimensions*/ ctx[11].height)) {
 				attr(svg, "height", svg_height_value);
 			}
 
@@ -3153,7 +3153,7 @@ function create_fragment(ctx) {
 				each_blocks_1.length = each_value_4.length;
 			}
 
-			if (dirty[0] & /*selectedTypeIndex, allTypes, selectedElemIndex, currentRule, hasDisplayedCustom*/ 65752) {
+			if (dirty[0] & /*selectedTypeIndex, allTypes, selectedElemIndex, currentRule, hasDisplayedCustom*/ 98392) {
 				each_value_3 = /*allTypes*/ ctx[3][/*selectedElemIndex*/ ctx[4]] || [];
 				let i;
 
@@ -3393,8 +3393,6 @@ function instance($$self, $$props, $$invalidate) {
 	let allCurrentPropDefs = {}; // propName => selectorDef
 	let bringableToFront = []; // null = not bringable, true = bringable, false = was bringed
 	let hasDisplayedCustom = false;
-
-	// $: curType = allTypes[selectedElemIndex]?.[selectedTypeIndex];
 	let curType;
 
 	onMount(() => {
@@ -3450,7 +3448,7 @@ function instance($$self, $$props, $$invalidate) {
 			}
 		});
 
-		$$invalidate(13, propsByType = Object.entries(_allCurrentPropDefs).reduce(
+		$$invalidate(12, propsByType = Object.entries(_allCurrentPropDefs).reduce(
 			(byType, [propName, selectorDef]) => {
 				const selectorType = selectorDef.type;
 				if (!(selectorType in byType)) byType[selectorType] = { selected: 0, props: [propName] }; else byType[selectorType].props.push(propName);
@@ -3459,7 +3457,7 @@ function instance($$self, $$props, $$invalidate) {
 			{}
 		));
 
-		$$invalidate(14, allCurrentPropDefs = _allCurrentPropDefs);
+		$$invalidate(13, allCurrentPropDefs = _allCurrentPropDefs);
 		updateHelpers();
 	}
 
@@ -3547,17 +3545,17 @@ function instance($$self, $$props, $$invalidate) {
 		$$invalidate(4, selectedElemIndex = 0);
 		$$invalidate(5, selectedRuleIndex = 0);
 		$$invalidate(6, selectedTypeIndex = 0);
-		$$invalidate(15, bringableToFront = []);
+		$$invalidate(14, bringableToFront = []);
 		$$invalidate(3, allTypes = []);
 		$$invalidate(2, allRules = []);
 		$$invalidate(1, targetsToSearch = [el, ...getAdditionalElems(el)]);
 		$$invalidate(3, allTypes = getEditableTypes(targetsToSearch));
-		$$invalidate(16, hasDisplayedCustom = false);
+		$$invalidate(15, hasDisplayedCustom = false);
 		$$invalidate(2, allRules = getMatchedCSSRules(targetsToSearch));
 
 		for (let def of Object.values(customProps)) {
 			if (def.getter(el) !== null) {
-				$$invalidate(16, hasDisplayedCustom = true);
+				$$invalidate(15, hasDisplayedCustom = true);
 				break;
 			}
 		}
@@ -3573,9 +3571,9 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	function close() {
-		$$invalidate(9, self.style.display = "none", self);
-		$$invalidate(10, helperElemWrapper.style.display = "none", helperElemWrapper);
-		$$invalidate(11, pathWithHoles = '');
+		$$invalidate(8, self.style.display = "none", self);
+		$$invalidate(9, helperElemWrapper.style.display = "none", helperElemWrapper);
+		$$invalidate(10, pathWithHoles = '');
 	}
 
 	function isOpened() {
@@ -3595,10 +3593,10 @@ function instance($$self, $$props, $$invalidate) {
 		? pageDimensions.height - 450
 		: y + 10;
 
-		$$invalidate(9, self.style.left = x + "px", self);
-		$$invalidate(9, self.style.top = y + "px", self);
-		$$invalidate(10, helperElemWrapper.style.display = "block", helperElemWrapper);
-		$$invalidate(9, self.style.display = "block", self);
+		$$invalidate(8, self.style.left = x + "px", self);
+		$$invalidate(8, self.style.top = y + "px", self);
+		$$invalidate(9, helperElemWrapper.style.display = "block", helperElemWrapper);
+		$$invalidate(8, self.style.display = "block", self);
 	}
 
 	async function updateHelpers() {
@@ -3612,7 +3610,7 @@ function instance($$self, $$props, $$invalidate) {
 		}
 
 		const boundingBoxes = matching.map(el => getBoundingBoxInfos(el, 10));
-		$$invalidate(11, pathWithHoles = computeContours(boundingBoxes, pageDimensions));
+		$$invalidate(10, pathWithHoles = computeContours(boundingBoxes, pageDimensions));
 	}
 
 	function _updateProp(propName, val, suffix) {
@@ -3627,8 +3625,8 @@ function instance($$self, $$props, $$invalidate) {
 			}
 		} else currentRule.style.setProperty(propName, finalValue);
 
-		$$invalidate(14, allCurrentPropDefs[propName].value = val, allCurrentPropDefs);
-		$$invalidate(14, allCurrentPropDefs[propName].displayed = finalValue, allCurrentPropDefs);
+		$$invalidate(13, allCurrentPropDefs[propName].value = val, allCurrentPropDefs);
+		$$invalidate(13, allCurrentPropDefs[propName].displayed = finalValue, allCurrentPropDefs);
 		onStyleChanged(currentElement, currentRule, propName, finalValue);
 		updateHelpers();
 	}
@@ -3642,7 +3640,7 @@ function instance($$self, $$props, $$invalidate) {
 		const marginTop = parseInt(bodyStyle.marginTop);
 		const marginBottom = parseInt(bodyStyle.marginBottom);
 
-		$$invalidate(12, pageDimensions = {
+		$$invalidate(11, pageDimensions = {
 			width: document.body.offsetWidth + marginLeft + marginRight,
 			height: document.body.offsetHeight + marginTop + marginBottom
 		});
@@ -3660,7 +3658,7 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	function bringToFront() {
-		$$invalidate(15, bringableToFront[selectedElemIndex] = false, bringableToFront);
+		$$invalidate(14, bringableToFront[selectedElemIndex] = false, bringableToFront);
 		currentElement.parentNode.appendChild(currentElement);
 	}
 
@@ -3687,14 +3685,14 @@ function instance($$self, $$props, $$invalidate) {
 	function div0_binding($$value) {
 		binding_callbacks[$$value ? 'unshift' : 'push'](() => {
 			positionAnchor = $$value;
-			$$invalidate(8, positionAnchor);
+			$$invalidate(7, positionAnchor);
 		});
 	}
 
 	function svg_binding($$value) {
 		binding_callbacks[$$value ? 'unshift' : 'push'](() => {
 			helperElemWrapper = $$value;
-			$$invalidate(10, helperElemWrapper);
+			$$invalidate(9, helperElemWrapper);
 		});
 	}
 
@@ -3712,7 +3710,7 @@ function instance($$self, $$props, $$invalidate) {
 	};
 
 	const change_handler = async (choices, each_value, each_index, e) => {
-		$$invalidate(13, each_value[each_index][1].selected = e.target.value, propsByType);
+		$$invalidate(12, each_value[each_index][1].selected = e.target.value, propsByType);
 		await tick();
 	};
 
@@ -3724,7 +3722,7 @@ function instance($$self, $$props, $$invalidate) {
 	function div4_binding($$value) {
 		binding_callbacks[$$value ? 'unshift' : 'push'](() => {
 			self = $$value;
-			$$invalidate(9, self);
+			$$invalidate(8, self);
 		});
 	}
 
@@ -3749,7 +3747,7 @@ function instance($$self, $$props, $$invalidate) {
 		}
 
 		if ($$self.$$.dirty[0] & /*allRules, selectedElemIndex, selectedRuleIndex*/ 52) {
-			$$invalidate(7, currentRule = allRules[selectedElemIndex]?.[selectedRuleIndex]);
+			$$invalidate(16, currentRule = allRules[selectedElemIndex]?.[selectedRuleIndex]);
 		}
 
 		if ($$self.$$.dirty[0] & /*allTypes, selectedElemIndex, selectedTypeIndex, curType*/ 536871000) {
@@ -3760,9 +3758,9 @@ function instance($$self, $$props, $$invalidate) {
 			}
 		}
 
-		if ($$self.$$.dirty[0] & /*curType, currentRule*/ 536871040) {
+		if ($$self.$$.dirty[0] & /*curType, selectedRuleIndex, selectedElemIndex*/ 536870960) {
 			{
-				if (curType && currentRule) {
+				if (curType || selectedRuleIndex || selectedElemIndex) {
 					initAndGroup();
 				}
 			}
@@ -3777,7 +3775,6 @@ function instance($$self, $$props, $$invalidate) {
 		selectedElemIndex,
 		selectedRuleIndex,
 		selectedTypeIndex,
-		currentRule,
 		positionAnchor,
 		self,
 		helperElemWrapper,
@@ -3787,6 +3784,7 @@ function instance($$self, $$props, $$invalidate) {
 		allCurrentPropDefs,
 		bringableToFront,
 		hasDisplayedCustom,
+		currentRule,
 		overlayClicked,
 		updateProp,
 		bringToFront,
