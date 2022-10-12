@@ -261,6 +261,7 @@
         self.style.top = y + "px";
         helperElemWrapper.style.display = "block";
         self.style.display = "block";
+        updateHelpers();
     }
 
     async function updateHelpers() {

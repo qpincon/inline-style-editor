@@ -2070,7 +2070,7 @@ function get_each_context_5(ctx, list, i) {
 	return child_ctx;
 }
 
-// (387:4) {#if targetsToSearch.length > 1}
+// (388:4) {#if targetsToSearch.length > 1}
 function create_if_block_7(ctx) {
 	let div;
 	let b;
@@ -2135,7 +2135,7 @@ function create_if_block_7(ctx) {
 	};
 }
 
-// (390:8) {#each targetsToSearch as target, elemIndex}
+// (391:8) {#each targetsToSearch as target, elemIndex}
 function create_each_block_5(ctx) {
 	let span;
 	let t0;
@@ -2182,7 +2182,7 @@ function create_each_block_5(ctx) {
 	};
 }
 
-// (399:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
+// (400:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
 function create_each_block_4(ctx) {
 	let span;
 	let t_value = /*ruleName*/ ctx[75] + "";
@@ -2231,7 +2231,7 @@ function create_each_block_4(ctx) {
 	};
 }
 
-// (410:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
+// (411:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
 function create_if_block_6(ctx) {
 	let span;
 	let t0_value = /*type*/ ctx[72] + "";
@@ -2277,7 +2277,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (408:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
+// (409:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
 function create_each_block_3(ctx) {
 	let if_block_anchor;
 	let if_block = (/*type*/ ctx[72] !== 'custom' || /*currentRule*/ ctx[16] === 'inline' && /*type*/ ctx[72] === 'custom' && /*hasDisplayedCustom*/ ctx[15]) && create_if_block_6(ctx);
@@ -2312,7 +2312,7 @@ function create_each_block_3(ctx) {
 	};
 }
 
-// (415:4) {#if allTypes[selectedElemIndex]}
+// (416:4) {#if allTypes[selectedElemIndex]}
 function create_if_block(ctx) {
 	let div;
 	let t;
@@ -2420,7 +2420,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (426:16) {:else}
+// (427:16) {:else}
 function create_else_block(ctx) {
 	let span;
 	let t_value = /*selectedName*/ ctx[63] + "";
@@ -2444,7 +2444,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (420:16) {#if choices.props.length > 1}
+// (421:16) {#if choices.props.length > 1}
 function create_if_block_5(ctx) {
 	let div;
 	let select;
@@ -2518,7 +2518,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (422:24) {#each choices.props as propName, i}
+// (423:24) {#each choices.props as propName, i}
 function create_each_block_2(ctx) {
 	let option;
 	let t0_value = /*propName*/ ctx[69] + "";
@@ -2553,7 +2553,7 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (445:46) 
+// (446:46) 
 function create_if_block_4(ctx) {
 	let colorpicker;
 	let current;
@@ -2599,7 +2599,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (439:47) 
+// (440:47) 
 function create_if_block_3(ctx) {
 	let select;
 	let mounted;
@@ -2672,7 +2672,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (430:16) {#if propType === 'slider'}
+// (431:16) {#if propType === 'slider'}
 function create_if_block_2(ctx) {
 	let input;
 	let input_min_value;
@@ -2747,7 +2747,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (441:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
+// (442:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
 function create_each_block_1(ctx) {
 	let option;
 	let t_value = /*choice*/ ctx[66] + "";
@@ -2785,7 +2785,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (417:8) {#each Object.entries(propsByType) as [propType, choices]}
+// (418:8) {#each Object.entries(propsByType) as [propType, choices]}
 function create_each_block(ctx) {
 	let div;
 	let t0;
@@ -2926,7 +2926,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (453:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
+// (454:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
 function create_if_block_1(ctx) {
 	let div;
 	let mounted;
@@ -3597,6 +3597,7 @@ function instance($$self, $$props, $$invalidate) {
 		$$invalidate(8, self.style.top = y + "px", self);
 		$$invalidate(9, helperElemWrapper.style.display = "block", helperElemWrapper);
 		$$invalidate(8, self.style.display = "block", self);
+		updateHelpers();
 	}
 
 	async function updateHelpers() {
