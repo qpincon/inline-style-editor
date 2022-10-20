@@ -2070,7 +2070,7 @@ function get_each_context_5(ctx, list, i) {
 	return child_ctx;
 }
 
-// (389:4) {#if targetsToSearch.length > 1}
+// (390:4) {#if targetsToSearch.length > 1}
 function create_if_block_7(ctx) {
 	let div;
 	let b;
@@ -2135,7 +2135,7 @@ function create_if_block_7(ctx) {
 	};
 }
 
-// (392:8) {#each targetsToSearch as target, elemIndex}
+// (393:8) {#each targetsToSearch as target, elemIndex}
 function create_each_block_5(ctx) {
 	let span;
 	let t0;
@@ -2182,7 +2182,7 @@ function create_each_block_5(ctx) {
 	};
 }
 
-// (401:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
+// (402:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
 function create_each_block_4(ctx) {
 	let span;
 	let t_value = /*ruleName*/ ctx[75] + "";
@@ -2231,7 +2231,7 @@ function create_each_block_4(ctx) {
 	};
 }
 
-// (412:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
+// (413:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
 function create_if_block_6(ctx) {
 	let span;
 	let t0_value = /*type*/ ctx[72] + "";
@@ -2277,7 +2277,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (410:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
+// (411:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
 function create_each_block_3(ctx) {
 	let if_block_anchor;
 	let if_block = (/*type*/ ctx[72] !== 'custom' || /*currentRule*/ ctx[16] === 'inline' && /*type*/ ctx[72] === 'custom' && /*hasDisplayedCustom*/ ctx[15]) && create_if_block_6(ctx);
@@ -2312,7 +2312,7 @@ function create_each_block_3(ctx) {
 	};
 }
 
-// (417:4) {#if allTypes[selectedElemIndex]}
+// (418:4) {#if allTypes[selectedElemIndex]}
 function create_if_block(ctx) {
 	let div;
 	let t;
@@ -2420,7 +2420,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (428:16) {:else}
+// (429:16) {:else}
 function create_else_block(ctx) {
 	let span;
 	let t_value = /*selectedName*/ ctx[63] + "";
@@ -2444,7 +2444,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (422:16) {#if choices.props.length > 1}
+// (423:16) {#if choices.props.length > 1}
 function create_if_block_5(ctx) {
 	let div;
 	let select;
@@ -2518,7 +2518,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (424:24) {#each choices.props as propName, i}
+// (425:24) {#each choices.props as propName, i}
 function create_each_block_2(ctx) {
 	let option;
 	let t0_value = /*propName*/ ctx[69] + "";
@@ -2553,7 +2553,7 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (447:46) 
+// (448:46) 
 function create_if_block_4(ctx) {
 	let colorpicker;
 	let current;
@@ -2599,7 +2599,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (441:47) 
+// (442:47) 
 function create_if_block_3(ctx) {
 	let select;
 	let mounted;
@@ -2672,7 +2672,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (432:16) {#if propType === 'slider'}
+// (433:16) {#if propType === 'slider'}
 function create_if_block_2(ctx) {
 	let input;
 	let input_min_value;
@@ -2747,7 +2747,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (443:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
+// (444:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
 function create_each_block_1(ctx) {
 	let option;
 	let t_value = /*choice*/ ctx[66] + "";
@@ -2785,7 +2785,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (419:8) {#each Object.entries(propsByType) as [propType, choices]}
+// (420:8) {#each Object.entries(propsByType) as [propType, choices]}
 function create_each_block(ctx) {
 	let div;
 	let t0;
@@ -2926,7 +2926,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (455:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
+// (456:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
 function create_if_block_1(ctx) {
 	let div;
 	let mounted;
@@ -3671,6 +3671,7 @@ function instance($$self, $$props, $$invalidate) {
 			currentRule.style.removeProperty(propName);
 		}
 
+		onStyleChanged(currentElement, currentRule, propName, null);
 		initAndGroup();
 	}
 

@@ -361,6 +361,7 @@
         else {
             currentRule.style.removeProperty(propName);
         }
+        onStyleChanged(currentElement, currentRule, propName, null);
         initAndGroup();
     }
     
