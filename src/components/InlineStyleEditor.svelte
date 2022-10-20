@@ -135,7 +135,6 @@
             return byType;
         }, {});
         allCurrentPropDefs = _allCurrentPropDefs;
-        console.log(JSON.parse(JSON.stringify(allCurrentPropDefs)));
         updateHelpers();
     }
 
