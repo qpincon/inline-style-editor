@@ -211,7 +211,7 @@
         open(e.target, e.pageX, e.pageY);
     }
 
-    export function open(el, x, y) {
+    export async function open(el, x, y) {
         udpatePageDimensions();
         if (el.classList.contains('overlay-over')) return overlayClicked();
         else if (self.contains(el)) return;
@@ -239,6 +239,7 @@
             const rect = getBoundingBoxInfos(el, 15);
             show(rect.left, rect.top);
         }
+        await tick();
         initAndGroup();
     }
 
