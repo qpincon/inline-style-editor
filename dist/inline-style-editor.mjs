@@ -2070,7 +2070,7 @@ function get_each_context_5(ctx, list, i) {
 	return child_ctx;
 }
 
-// (395:4) {#if targetsToSearch.length > 1}
+// (396:4) {#if targetsToSearch.length > 1}
 function create_if_block_7(ctx) {
 	let div;
 	let b;
@@ -2135,7 +2135,7 @@ function create_if_block_7(ctx) {
 	};
 }
 
-// (398:8) {#each targetsToSearch as target, elemIndex}
+// (399:8) {#each targetsToSearch as target, elemIndex}
 function create_each_block_5(ctx) {
 	let span;
 	let t0;
@@ -2182,7 +2182,7 @@ function create_each_block_5(ctx) {
 	};
 }
 
-// (407:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
+// (408:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
 function create_each_block_4(ctx) {
 	let span;
 	let t_value = /*ruleName*/ ctx[75] + "";
@@ -2231,7 +2231,7 @@ function create_each_block_4(ctx) {
 	};
 }
 
-// (418:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
+// (419:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
 function create_if_block_6(ctx) {
 	let span;
 	let t0_value = /*type*/ ctx[72] + "";
@@ -2277,7 +2277,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (416:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
+// (417:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
 function create_each_block_3(ctx) {
 	let if_block_anchor;
 	let if_block = (/*type*/ ctx[72] !== 'custom' || /*currentRule*/ ctx[16] === 'inline' && /*type*/ ctx[72] === 'custom' && /*hasDisplayedCustom*/ ctx[15]) && create_if_block_6(ctx);
@@ -2312,7 +2312,7 @@ function create_each_block_3(ctx) {
 	};
 }
 
-// (423:4) {#if allTypes[selectedElemIndex]}
+// (424:4) {#if allTypes[selectedElemIndex]}
 function create_if_block(ctx) {
 	let div;
 	let t;
@@ -2420,7 +2420,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (434:16) {:else}
+// (435:16) {:else}
 function create_else_block(ctx) {
 	let span;
 	let t_value = /*selectedName*/ ctx[63] + "";
@@ -2444,7 +2444,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (428:16) {#if choices.props.length > 1}
+// (429:16) {#if choices.props.length > 1}
 function create_if_block_5(ctx) {
 	let div;
 	let select;
@@ -2518,7 +2518,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (430:24) {#each choices.props as propName, i}
+// (431:24) {#each choices.props as propName, i}
 function create_each_block_2(ctx) {
 	let option;
 	let t0_value = /*propName*/ ctx[69] + "";
@@ -2553,7 +2553,7 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (453:46) 
+// (454:46) 
 function create_if_block_4(ctx) {
 	let colorpicker;
 	let current;
@@ -2599,7 +2599,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (447:47) 
+// (448:47) 
 function create_if_block_3(ctx) {
 	let select;
 	let mounted;
@@ -2672,7 +2672,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (438:16) {#if propType === 'slider'}
+// (439:16) {#if propType === 'slider'}
 function create_if_block_2(ctx) {
 	let input;
 	let input_min_value;
@@ -2747,7 +2747,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (449:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
+// (450:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
 function create_each_block_1(ctx) {
 	let option;
 	let t_value = /*choice*/ ctx[66] + "";
@@ -2785,7 +2785,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (425:8) {#each Object.entries(propsByType) as [propType, choices]}
+// (426:8) {#each Object.entries(propsByType) as [propType, choices]}
 function create_each_block(ctx) {
 	let div;
 	let t0;
@@ -2926,7 +2926,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (461:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
+// (462:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
 function create_if_block_1(ctx) {
 	let div;
 	let mounted;
@@ -3670,6 +3670,7 @@ function instance($$self, $$props, $$invalidate) {
 	function bringToFront() {
 		$$invalidate(14, bringableToFront[selectedElemIndex] = false, bringableToFront);
 		currentElement.parentNode.appendChild(currentElement);
+		onStyleChanged(currentElement, currentRule, 'bringtofront', null);
 	}
 
 	function deleteProp(propName) {

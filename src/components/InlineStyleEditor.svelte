@@ -357,6 +357,7 @@
     function bringToFront() {
         bringableToFront[selectedElemIndex] = false;
         currentElement.parentNode.appendChild(currentElement);
+        onStyleChanged(currentElement, currentRule, 'bringtofront', null);
     }
 
     function deleteProp(propName) {
