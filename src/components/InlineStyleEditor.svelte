@@ -336,7 +336,10 @@
     function parsePropvalue(value, type="number") {
         if (type=="raw") return value;
         if (type == "number" && /[0-9]+(px)|(em)|(rem)/.test(value)) return parseInt(value);
-        if (type == "rgb" && (value.includes('rgb') || value[0] == "#")) return cssRgbToHex(value);
+        if (type == "rgb") {
+            if (value === "none") return "#00000000";
+            if ((value.includes('rgb') || value[0] == "#")) return cssRgbToHex(value);
+        } 
         return value
     }
 
