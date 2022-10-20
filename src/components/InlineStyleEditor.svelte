@@ -213,7 +213,6 @@
 
     export function open(el, x, y) {
         udpatePageDimensions();
-        initAndGroup();
         if (el.classList.contains('overlay-over')) return overlayClicked();
         else if (self.contains(el)) return;
         selectedElemIndex = 0;
@@ -240,6 +239,7 @@
             const rect = getBoundingBoxInfos(el, 15);
             show(rect.left, rect.top);
         }
+        initAndGroup();
     }
 
     export function close() {

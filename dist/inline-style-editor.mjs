@@ -3547,7 +3547,6 @@ function instance($$self, $$props, $$invalidate) {
 
 	function open(el, x, y) {
 		udpatePageDimensions();
-		initAndGroup();
 		if (el.classList.contains('overlay-over')) return overlayClicked(); else if (self.contains(el)) return;
 		$$invalidate(4, selectedElemIndex = 0);
 		$$invalidate(5, selectedRuleIndex = 0);
@@ -3575,6 +3574,8 @@ function instance($$self, $$props, $$invalidate) {
 			const rect = getBoundingBoxInfos(el, 15);
 			show(rect.left, rect.top);
 		}
+
+		initAndGroup();
 	}
 
 	function close() {
