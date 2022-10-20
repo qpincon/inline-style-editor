@@ -135,6 +135,7 @@
             return byType;
         }, {});
         allCurrentPropDefs = _allCurrentPropDefs;
+        console.log(JSON.parse(JSON.stringify(allCurrentPropDefs)));
         updateHelpers();
     }
 
@@ -446,8 +447,12 @@ on:click={overlayClicked}>
                     />
                     <span class="current-value"> { allCurrentPropDefs[selectedName].displayed } </span> 
                 {:else if propType == 'select'}
+                    {@const choices = allCurrentPropDefs[selectedName].choices()}
                     <select on:change={(e) => updateProp(selectedName, e.target.value)}>
-                        {#each allCurrentPropDefs[selectedName].choices() as choice}
+                        {#if !choices.includes(allCurrentPropDefs[selectedName].value)}
+                            <option selected="true"> --- </option>
+                        {/if}
+                        {#each choices as choice}
                             <option selected={choice == allCurrentPropDefs[selectedName].value || null}> {choice} </option>
                         {/each}
                     </select>
