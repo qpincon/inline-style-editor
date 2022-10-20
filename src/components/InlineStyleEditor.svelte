@@ -213,6 +213,7 @@
 
     export function open(el, x, y) {
         udpatePageDimensions();
+        initAndGroup();
         if (el.classList.contains('overlay-over')) return overlayClicked();
         else if (self.contains(el)) return;
         selectedElemIndex = 0;

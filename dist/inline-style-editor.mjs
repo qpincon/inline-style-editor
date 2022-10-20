@@ -2070,7 +2070,7 @@ function get_each_context_5(ctx, list, i) {
 	return child_ctx;
 }
 
-// (393:4) {#if targetsToSearch.length > 1}
+// (394:4) {#if targetsToSearch.length > 1}
 function create_if_block_7(ctx) {
 	let div;
 	let b;
@@ -2135,7 +2135,7 @@ function create_if_block_7(ctx) {
 	};
 }
 
-// (396:8) {#each targetsToSearch as target, elemIndex}
+// (397:8) {#each targetsToSearch as target, elemIndex}
 function create_each_block_5(ctx) {
 	let span;
 	let t0;
@@ -2182,7 +2182,7 @@ function create_each_block_5(ctx) {
 	};
 }
 
-// (405:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
+// (406:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
 function create_each_block_4(ctx) {
 	let span;
 	let t_value = /*ruleName*/ ctx[75] + "";
@@ -2231,7 +2231,7 @@ function create_each_block_4(ctx) {
 	};
 }
 
-// (416:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
+// (417:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
 function create_if_block_6(ctx) {
 	let span;
 	let t0_value = /*type*/ ctx[72] + "";
@@ -2277,7 +2277,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (414:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
+// (415:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
 function create_each_block_3(ctx) {
 	let if_block_anchor;
 	let if_block = (/*type*/ ctx[72] !== 'custom' || /*currentRule*/ ctx[16] === 'inline' && /*type*/ ctx[72] === 'custom' && /*hasDisplayedCustom*/ ctx[15]) && create_if_block_6(ctx);
@@ -2312,7 +2312,7 @@ function create_each_block_3(ctx) {
 	};
 }
 
-// (421:4) {#if allTypes[selectedElemIndex]}
+// (422:4) {#if allTypes[selectedElemIndex]}
 function create_if_block(ctx) {
 	let div;
 	let t;
@@ -2420,7 +2420,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (432:16) {:else}
+// (433:16) {:else}
 function create_else_block(ctx) {
 	let span;
 	let t_value = /*selectedName*/ ctx[63] + "";
@@ -2444,7 +2444,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (426:16) {#if choices.props.length > 1}
+// (427:16) {#if choices.props.length > 1}
 function create_if_block_5(ctx) {
 	let div;
 	let select;
@@ -2518,7 +2518,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (428:24) {#each choices.props as propName, i}
+// (429:24) {#each choices.props as propName, i}
 function create_each_block_2(ctx) {
 	let option;
 	let t0_value = /*propName*/ ctx[69] + "";
@@ -2553,7 +2553,7 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (451:46) 
+// (452:46) 
 function create_if_block_4(ctx) {
 	let colorpicker;
 	let current;
@@ -2599,7 +2599,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (445:47) 
+// (446:47) 
 function create_if_block_3(ctx) {
 	let select;
 	let mounted;
@@ -2672,7 +2672,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (436:16) {#if propType === 'slider'}
+// (437:16) {#if propType === 'slider'}
 function create_if_block_2(ctx) {
 	let input;
 	let input_min_value;
@@ -2747,7 +2747,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (447:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
+// (448:24) {#each allCurrentPropDefs[selectedName].choices() as choice}
 function create_each_block_1(ctx) {
 	let option;
 	let t_value = /*choice*/ ctx[66] + "";
@@ -2785,7 +2785,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (423:8) {#each Object.entries(propsByType) as [propType, choices]}
+// (424:8) {#each Object.entries(propsByType) as [propType, choices]}
 function create_each_block(ctx) {
 	let div;
 	let t0;
@@ -2926,7 +2926,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (459:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
+// (460:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
 function create_if_block_1(ctx) {
 	let div;
 	let mounted;
@@ -3547,6 +3547,7 @@ function instance($$self, $$props, $$invalidate) {
 
 	function open(el, x, y) {
 		udpatePageDimensions();
+		initAndGroup();
 		if (el.classList.contains('overlay-over')) return overlayClicked(); else if (self.contains(el)) return;
 		$$invalidate(4, selectedElemIndex = 0);
 		$$invalidate(5, selectedRuleIndex = 0);
