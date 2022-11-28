@@ -91,6 +91,7 @@ new InlineStyleEditor({
 - font-weight
 - color
 - stroke-width
+- stroke-linejoin
 - stroke
 - fill
 - stroke-dasharray

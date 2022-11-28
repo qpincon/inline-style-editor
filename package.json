@@ -1,6 +1,6 @@
 {
   "name": "inline-style-editor",
-  "version": "1.2.11",
+  "version": "1.2.12",
   "description": "Update CSS rules or add inline style to elements visualy",
   "scripts": {
     "build": "rollup --config",
@@ -8,6 +8,7 @@
   },
   "author": "Quentin Pinçon",
   "license": "ISC",
+  "keywords": ["style", "editor", "css", "graphical", "gui", "lowcode"],
   "sideEffects": false,
   "svelte": "src/index.js",
   "module": "dist/inline-style-editor.mjs",

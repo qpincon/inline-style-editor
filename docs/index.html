@@ -351,7 +351,7 @@
                             const transform = el.getAttribute('transform');
                             if (!transform) return 1;
                             else {
-                                let scaleValue = transformStr.match(/scale\(([0-9\.]+)\)/);
+                                let scaleValue = transform.match(/scale\(([0-9\.]+)\)/);
                                 if (scaleValue.length > 1) return parseFloat(scaleValue[1]);
                             }
                             return 1;

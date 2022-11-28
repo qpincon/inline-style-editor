@@ -2027,8 +2027,7 @@ function listFonts() {
 
 function get_each_context(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[61] = list[i][0];
-	child_ctx[62] = list[i][1];
+	child_ctx[62] = list[i];
 	child_ctx[64] = list;
 	child_ctx[65] = i;
 	const constants_0 = /*choices*/ child_ctx[62].props[/*choices*/ child_ctx[62].selected];
@@ -2077,7 +2076,7 @@ function get_each_context_5(ctx, list, i) {
 	return child_ctx;
 }
 
-// (396:4) {#if targetsToSearch.length > 1}
+// (403:4) {#if targetsToSearch.length > 1}
 function create_if_block_8(ctx) {
 	let div;
 	let b;
@@ -2142,7 +2141,7 @@ function create_if_block_8(ctx) {
 	};
 }
 
-// (399:8) {#each targetsToSearch as target, elemIndex}
+// (406:8) {#each targetsToSearch as target, elemIndex}
 function create_each_block_5(ctx) {
 	let span;
 	let t0;
@@ -2189,7 +2188,7 @@ function create_each_block_5(ctx) {
 	};
 }
 
-// (408:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
+// (415:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
 function create_each_block_4(ctx) {
 	let span;
 	let t_value = /*ruleName*/ ctx[75] + "";
@@ -2238,7 +2237,7 @@ function create_each_block_4(ctx) {
 	};
 }
 
-// (419:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
+// (426:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
 function create_if_block_7(ctx) {
 	let span;
 	let t0_value = /*type*/ ctx[72] + "";
@@ -2284,7 +2283,7 @@ function create_if_block_7(ctx) {
 	};
 }
 
-// (417:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
+// (424:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
 function create_each_block_3(ctx) {
 	let if_block_anchor;
 	let if_block = (/*type*/ ctx[72] !== 'custom' || /*currentRule*/ ctx[16] === 'inline' && /*type*/ ctx[72] === 'custom' && /*hasDisplayedCustom*/ ctx[15]) && create_if_block_7(ctx);
@@ -2319,12 +2318,12 @@ function create_each_block_3(ctx) {
 	};
 }
 
-// (424:4) {#if allTypes[selectedElemIndex]}
+// (431:4) {#if allTypes[selectedElemIndex]}
 function create_if_block(ctx) {
 	let div;
 	let t;
 	let current;
-	let each_value = Object.entries(/*propsByType*/ ctx[12]);
+	let each_value = /*propsByType*/ ctx[12];
 	let each_blocks = [];
 
 	for (let i = 0; i < each_value.length; i += 1) {
@@ -2362,7 +2361,7 @@ function create_if_block(ctx) {
 		},
 		p(ctx, dirty) {
 			if (dirty[0] & /*allCurrentPropDefs, propsByType, updateProp, deleteProp*/ 1323008) {
-				each_value = Object.entries(/*propsByType*/ ctx[12]);
+				each_value = /*propsByType*/ ctx[12];
 				let i;
 
 				for (i = 0; i < each_value.length; i += 1) {
@@ -2427,7 +2426,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (435:16) {:else}
+// (442:16) {:else}
 function create_else_block(ctx) {
 	let span;
 	let t_value = /*selectedName*/ ctx[63] + "";
@@ -2451,7 +2450,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (429:16) {#if choices.props.length > 1}
+// (436:16) {#if choices.props.length > 1}
 function create_if_block_6(ctx) {
 	let div;
 	let select;
@@ -2465,7 +2464,7 @@ function create_if_block_6(ctx) {
 	}
 
 	function change_handler(...args) {
-		return /*change_handler*/ ctx[35](/*choices*/ ctx[62], /*each_value*/ ctx[64], /*each_index*/ ctx[65], ...args);
+		return /*change_handler*/ ctx[35](/*choices*/ ctx[62], /*each_value*/ ctx[64], /*choices_index*/ ctx[65], ...args);
 	}
 
 	return {
@@ -2525,7 +2524,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (431:24) {#each choices.props as propName, i}
+// (438:24) {#each choices.props as propName, i}
 function create_each_block_2(ctx) {
 	let option;
 	let t0_value = /*propName*/ ctx[69] + "";
@@ -2560,7 +2559,7 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (458:46) 
+// (465:50) 
 function create_if_block_5(ctx) {
 	let colorpicker;
 	let current;
@@ -2606,7 +2605,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (448:47) 
+// (455:51) 
 function create_if_block_3(ctx) {
 	let select;
 	let show_if = !/*choices*/ ctx[62].includes(/*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].value);
@@ -2699,7 +2698,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (439:16) {#if propType === 'slider'}
+// (446:16) {#if choices.type === 'slider'}
 function create_if_block_2(ctx) {
 	let input;
 	let input_min_value;
@@ -2774,7 +2773,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (451:24) {#if !choices.includes(allCurrentPropDefs[selectedName].value)}
+// (458:24) {#if !choices.includes(allCurrentPropDefs[selectedName].value)}
 function create_if_block_4(ctx) {
 	let option;
 
@@ -2795,7 +2794,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (454:24) {#each choices as choice}
+// (461:24) {#each choices as choice}
 function create_each_block_1(ctx) {
 	let option;
 	let t_value = /*choice*/ ctx[66] + "";
@@ -2833,7 +2832,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (426:8) {#each Object.entries(propsByType) as [propType, choices]}
+// (433:8) {#each propsByType as choices}
 function create_each_block(ctx) {
 	let div;
 	let t0;
@@ -2861,9 +2860,9 @@ function create_each_block(ctx) {
 	const if_blocks = [];
 
 	function select_block_type_1(ctx, dirty) {
-		if (/*propType*/ ctx[61] === 'slider') return 0;
-		if (/*propType*/ ctx[61] == 'select') return 1;
-		if (/*propType*/ ctx[61] == 'color') return 2;
+		if (/*choices*/ ctx[62].type === 'slider') return 0;
+		if (/*choices*/ ctx[62].type == 'select') return 1;
+		if (/*choices*/ ctx[62].type == 'color') return 2;
 		return -1;
 	}
 
@@ -2979,7 +2978,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (466:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
+// (473:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
 function create_if_block_1(ctx) {
 	let div;
 	let mounted;
@@ -3358,7 +3357,7 @@ function instance($$self, $$props, $$invalidate) {
 	const borderProps = ["border-radius", "border-width", "border-color", "border-style"];
 	const backgroundProps = ["background-color"];
 	const fontProps = ["font-family", "font-size", "font-weight", "color"];
-	const pathProps = ["stroke-width", "stroke", "stroke-dasharray", "fill"];
+	const pathProps = ["stroke-width", "stroke", "stroke-dasharray", "stroke-linejoin", "fill"];
 
 	const cssPropByType = {
 		"border-radius": {
@@ -3405,6 +3404,10 @@ function instance($$self, $$props, $$invalidate) {
 			suffix: 'px'
 		},
 		'stroke': { type: "color" },
+		"stroke-linejoin": {
+			type: 'select',
+			choices: () => ["bevel", "miter", "round"]
+		},
 		'fill': { type: "color" },
 		"stroke-dasharray": {
 			type: "slider",
@@ -3435,6 +3438,7 @@ function instance($$self, $$props, $$invalidate) {
 		[customType]: Object.keys(customProps)
 	};
 
+	const inputTypeOrder = { slider: 0, select: 1, color: 2 };
 	let elementToListen = null;
 	let positionAnchor;
 	let self;
@@ -3509,11 +3513,22 @@ function instance($$self, $$props, $$invalidate) {
 		$$invalidate(12, propsByType = Object.entries(_allCurrentPropDefs).reduce(
 			(byType, [propName, selectorDef]) => {
 				const selectorType = selectorDef.type;
-				if (!(selectorType in byType)) byType[selectorType] = { selected: 0, props: [propName] }; else byType[selectorType].props.push(propName);
+				const existing = byType.find(x => x.type === selectorType);
+
+				if (!existing) byType.push({
+					selected: 0,
+					props: [propName],
+					type: selectorType
+				}); else existing.props.push(propName);
+
 				return byType;
 			},
-			{}
-		));
+			[]
+		).sort((a, b) => {
+			if (inputTypeOrder[a.type] < inputTypeOrder[b.type]) return -1;
+			if (inputTypeOrder[a.type] > inputTypeOrder[b.type]) return 1;
+			return 0;
+		}));
 
 		$$invalidate(13, allCurrentPropDefs = _allCurrentPropDefs);
 		updateHelpers();
@@ -3774,8 +3789,8 @@ function instance($$self, $$props, $$invalidate) {
 		$$invalidate(6, selectedTypeIndex = typeIndex);
 	};
 
-	const change_handler = async (choices, each_value, each_index, e) => {
-		$$invalidate(12, each_value[each_index][1].selected = e.target.value, propsByType);
+	const change_handler = async (choices, each_value, choices_index, e) => {
+		$$invalidate(12, each_value[choices_index].selected = e.target.value, propsByType);
 		await tick();
 	};
 

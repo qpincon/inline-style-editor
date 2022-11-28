@@ -11,7 +11,7 @@
     const borderProps = ["border-radius", "border-width", "border-color", "border-style"];
     const backgroundProps = ["background-color"];
     const fontProps = ["font-family", "font-size", "font-weight", "color"];
-    const pathProps = ["stroke-width", "stroke", "stroke-dasharray", "fill"];
+    const pathProps = ["stroke-width", "stroke", "stroke-dasharray", "stroke-linejoin", "fill"];
     const cssPropByType = {
         "border-radius": {type: "slider", min: 0, max: 30, suffix: 'px'},
         "border-width": {type: "slider", min: 0, max: 30, suffix: 'px'},
@@ -23,6 +23,7 @@
         "color": {type: "color"},
         "stroke-width": {type: "slider", min: 0, max: 20, step: 0.5, suffix: 'px'},
         'stroke': {type: "color"},
+        "stroke-linejoin": { type: 'select', choices: () => ["bevel", "miter", "round"]},
         'fill': {type: "color"},
         "stroke-dasharray": {type: "slider", min: 0, max: 30, suffix: 'px'},
         "background-color": {type: "color"},
@@ -46,6 +47,7 @@
         [typeBackground]: backgroundProps,
         [customType]: Object.keys(customProps),
     };
+    const inputTypeOrder = {slider: 0, select: 1, color: 2};
 
     let elementToListen = null;
     let positionAnchor;
@@ -130,10 +132,15 @@
         
         propsByType = Object.entries(_allCurrentPropDefs).reduce((byType, [propName, selectorDef]) => {
             const selectorType = selectorDef.type;
-            if (!(selectorType in byType)) byType[selectorType] = {selected: 0, props: [propName]};
-            else byType[selectorType].props.push(propName);
+            const existing = byType.find(x => x.type === selectorType);
+            if (!existing) byType.push({selected: 0, props: [propName], type: selectorType});
+            else existing.props.push(propName);
             return byType;
-        }, {});
+        }, []).sort((a, b) => {
+            if (inputTypeOrder[a.type] < inputTypeOrder[b.type]) return -1;
+            if (inputTypeOrder[a.type] > inputTypeOrder[b.type]) return  1;
+            return 0;
+        });
         allCurrentPropDefs = _allCurrentPropDefs;
         updateHelpers();
     }
@@ -423,7 +430,7 @@ on:click={overlayClicked}>
     </div>
     {#if allTypes[selectedElemIndex]}
     <div class="editor"> 
-        {#each Object.entries(propsByType) as [propType, choices]}
+        {#each propsByType as choices}
         {@const selectedName = choices.props[choices.selected]}
             <div class="prop-section">
                 {#if choices.props.length > 1}
@@ -436,7 +443,7 @@ on:click={overlayClicked}>
                     <span> { selectedName } </span>
                 {/if}
                 <span class="delete" on:click={() => deleteProp(selectedName)}>✕</span>
-                {#if propType === 'slider'}
+                {#if choices.type === 'slider'}
                     <input type=range
                         min={allCurrentPropDefs[selectedName].min} 
                         max={allCurrentPropDefs[selectedName].max}
@@ -445,7 +452,7 @@ on:click={overlayClicked}>
                         on:change={(e) => updateProp(selectedName, e.target.value, allCurrentPropDefs[selectedName].suffix, e.target)}
                     />
                     <span class="current-value"> { allCurrentPropDefs[selectedName].displayed } </span> 
-                {:else if propType == 'select'}
+                {:else if choices.type == 'select'}
                     {@const choices = allCurrentPropDefs[selectedName].choices()}
                     <select on:change={(e) => updateProp(selectedName, e.target.value)}>
                         {#if !choices.includes(allCurrentPropDefs[selectedName].value)}
@@ -455,7 +462,7 @@ on:click={overlayClicked}>
                             <option selected={choice == allCurrentPropDefs[selectedName].value || null}> {choice} </option>
                         {/each}
                     </select>
-                {:else if propType == 'color'}
+                {:else if choices.type == 'color'}
                     <ColorPicker 
                         value={allCurrentPropDefs[selectedName].value}
                         onChange={(color => updateProp(selectedName, color))}
