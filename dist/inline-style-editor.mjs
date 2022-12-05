@@ -3666,13 +3666,13 @@ function instance($$self, $$props, $$invalidate) {
 		$$invalidate(8, self.style.opacity = 0, self);
 		const popupDimension = self.getBoundingClientRect();
 
-		x = x + popupDimension.width > pageDimensions.width
-		? x - popupDimension.width
-		: x + 10;
+		x = x + popupDimension.width + 20 > pageDimensions.width
+		? x - popupDimension.width - 20
+		: x + 20;
 
-		y = y + popupDimension.height > pageDimensions.height
-		? y - popupDimension.height
-		: y + 10;
+		y = y + popupDimension.height + 20 > pageDimensions.height
+		? y - popupDimension.height - 20
+		: y + 20;
 
 		$$invalidate(8, self.style.left = x + "px", self);
 		$$invalidate(8, self.style.top = y + "px", self);

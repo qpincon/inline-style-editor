@@ -268,8 +268,8 @@
         self.style.display = "block";
         self.style.opacity = 0;
         const popupDimension = self.getBoundingClientRect();
-        x = (x + popupDimension.width > pageDimensions.width) ? x - popupDimension.width : x + 10;
-        y = (y + popupDimension.height > pageDimensions.height) ? y - popupDimension.height : y + 10;
+        x = (x + popupDimension.width + 20 > pageDimensions.width) ? x - popupDimension.width - 20: x + 20;
+        y = (y + popupDimension.height + 20 > pageDimensions.height) ? y - popupDimension.height - 20 : y + 20;
         self.style.left = x + "px";
         self.style.top = y + "px";
         helperElemWrapper.style.display = "block";
