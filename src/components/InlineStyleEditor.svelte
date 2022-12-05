@@ -241,13 +241,13 @@
         if (Object.keys(customProps).length) {
             allTypes[0].push(customType);
         }
+        await tick();
+        initAndGroup();
         if (x && y) show(x, y);
         else {
             const rect = getBoundingBoxInfos(el, 15);
             show(rect.left, rect.top);
         }
-        await tick();
-        initAndGroup();
     }
 
     export function close() {
@@ -265,12 +265,15 @@
     }
    
     function show(x, y) {
-        x = (x + 260 > pageDimensions.width) ? pageDimensions.width - 300 : x + 10;
-        y = (y + 410 > pageDimensions.height) ? pageDimensions.height - 450 : y + 10;
+        self.style.display = "block";
+        self.style.opacity = 0;
+        const popupDimension = self.getBoundingClientRect();
+        x = (x + popupDimension.width > pageDimensions.width) ? x - popupDimension.width : x + 10;
+        y = (y + popupDimension.height > pageDimensions.height) ? y - popupDimension.height : y + 10;
         self.style.left = x + "px";
         self.style.top = y + "px";
         helperElemWrapper.style.display = "block";
-        self.style.display = "block";
+        self.style.opacity = 1;
         updateHelpers();
     }
 

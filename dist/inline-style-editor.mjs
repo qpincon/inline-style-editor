@@ -2076,7 +2076,7 @@ function get_each_context_5(ctx, list, i) {
 	return child_ctx;
 }
 
-// (403:4) {#if targetsToSearch.length > 1}
+// (406:4) {#if targetsToSearch.length > 1}
 function create_if_block_8(ctx) {
 	let div;
 	let b;
@@ -2141,7 +2141,7 @@ function create_if_block_8(ctx) {
 	};
 }
 
-// (406:8) {#each targetsToSearch as target, elemIndex}
+// (409:8) {#each targetsToSearch as target, elemIndex}
 function create_each_block_5(ctx) {
 	let span;
 	let t0;
@@ -2188,7 +2188,7 @@ function create_each_block_5(ctx) {
 	};
 }
 
-// (415:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
+// (418:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
 function create_each_block_4(ctx) {
 	let span;
 	let t_value = /*ruleName*/ ctx[75] + "";
@@ -2237,7 +2237,7 @@ function create_each_block_4(ctx) {
 	};
 }
 
-// (426:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
+// (429:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
 function create_if_block_7(ctx) {
 	let span;
 	let t0_value = /*type*/ ctx[72] + "";
@@ -2283,7 +2283,7 @@ function create_if_block_7(ctx) {
 	};
 }
 
-// (424:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
+// (427:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
 function create_each_block_3(ctx) {
 	let if_block_anchor;
 	let if_block = (/*type*/ ctx[72] !== 'custom' || /*currentRule*/ ctx[16] === 'inline' && /*type*/ ctx[72] === 'custom' && /*hasDisplayedCustom*/ ctx[15]) && create_if_block_7(ctx);
@@ -2318,7 +2318,7 @@ function create_each_block_3(ctx) {
 	};
 }
 
-// (431:4) {#if allTypes[selectedElemIndex]}
+// (434:4) {#if allTypes[selectedElemIndex]}
 function create_if_block(ctx) {
 	let div;
 	let t;
@@ -2426,7 +2426,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (442:16) {:else}
+// (445:16) {:else}
 function create_else_block(ctx) {
 	let span;
 	let t_value = /*selectedName*/ ctx[63] + "";
@@ -2450,7 +2450,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (436:16) {#if choices.props.length > 1}
+// (439:16) {#if choices.props.length > 1}
 function create_if_block_6(ctx) {
 	let div;
 	let select;
@@ -2524,7 +2524,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (438:24) {#each choices.props as propName, i}
+// (441:24) {#each choices.props as propName, i}
 function create_each_block_2(ctx) {
 	let option;
 	let t0_value = /*propName*/ ctx[69] + "";
@@ -2559,7 +2559,7 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (465:50) 
+// (468:50) 
 function create_if_block_5(ctx) {
 	let colorpicker;
 	let current;
@@ -2605,7 +2605,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (455:51) 
+// (458:51) 
 function create_if_block_3(ctx) {
 	let select;
 	let show_if = !/*choices*/ ctx[62].includes(/*allCurrentPropDefs*/ ctx[13][/*selectedName*/ ctx[63]].value);
@@ -2698,7 +2698,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (446:16) {#if choices.type === 'slider'}
+// (449:16) {#if choices.type === 'slider'}
 function create_if_block_2(ctx) {
 	let input;
 	let input_min_value;
@@ -2773,7 +2773,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (458:24) {#if !choices.includes(allCurrentPropDefs[selectedName].value)}
+// (461:24) {#if !choices.includes(allCurrentPropDefs[selectedName].value)}
 function create_if_block_4(ctx) {
 	let option;
 
@@ -2794,7 +2794,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (461:24) {#each choices as choice}
+// (464:24) {#each choices as choice}
 function create_each_block_1(ctx) {
 	let option;
 	let t_value = /*choice*/ ctx[66] + "";
@@ -2832,7 +2832,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (433:8) {#each propsByType as choices}
+// (436:8) {#each propsByType as choices}
 function create_each_block(ctx) {
 	let div;
 	let t0;
@@ -2978,7 +2978,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (473:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
+// (476:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
 function create_if_block_1(ctx) {
 	let div;
 	let mounted;
@@ -3638,13 +3638,13 @@ function instance($$self, $$props, $$invalidate) {
 			allTypes[0].push(customType);
 		}
 
+		await tick();
+		initAndGroup();
+
 		if (x && y) show(x, y); else {
 			const rect = getBoundingBoxInfos(el, 15);
 			show(rect.left, rect.top);
 		}
-
-		await tick();
-		initAndGroup();
 	}
 
 	function close() {
@@ -3662,18 +3662,22 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	function show(x, y) {
-		x = x + 260 > pageDimensions.width
-		? pageDimensions.width - 300
+		$$invalidate(8, self.style.display = "block", self);
+		$$invalidate(8, self.style.opacity = 0, self);
+		const popupDimension = self.getBoundingClientRect();
+
+		x = x + popupDimension.width > pageDimensions.width
+		? x - popupDimension.width
 		: x + 10;
 
-		y = y + 410 > pageDimensions.height
-		? pageDimensions.height - 450
+		y = y + popupDimension.height > pageDimensions.height
+		? y - popupDimension.height
 		: y + 10;
 
 		$$invalidate(8, self.style.left = x + "px", self);
 		$$invalidate(8, self.style.top = y + "px", self);
 		$$invalidate(9, helperElemWrapper.style.display = "block", helperElemWrapper);
-		$$invalidate(8, self.style.display = "block", self);
+		$$invalidate(8, self.style.opacity = 1, self);
 		updateHelpers();
 	}
 
