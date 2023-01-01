@@ -34,6 +34,7 @@
     export let listenOnClick = false;
     export let onStyleChanged = () => {};
     export let customProps = {};
+    export let inlineDeletable = () => true;
 
     const typeText = "text";
     const typeBorder = "border";
@@ -371,6 +372,10 @@
         onStyleChanged(currentElement, currentRule, 'bringtofront', null);
     }
 
+    function deleteElem() {
+        currentElement.remove();
+        close();
+    }
     function deleteProp(propName) {
         if (currentRule === 'inline') {
             currentElement.style.removeProperty(propName)
@@ -477,6 +482,11 @@ on:click={overlayClicked}>
         {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
             <div class="btn" class:active="{bringableToFront[selectedElemIndex] === true}" on:click="{bringToFront}"> 
                 Bring to front
+            </div>
+        {/if}
+        {#if currentRule === 'inline' && inlineDeletable(currentElement)}
+            <div class="btn delete-elem" on:click="{deleteElem}">
+                Delete element
             </div>
         {/if}
     </div>
