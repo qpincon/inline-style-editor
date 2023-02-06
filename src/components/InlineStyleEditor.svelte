@@ -191,7 +191,7 @@
         return elems.reduce((typesByElem, elemDef) => {
             const elem = elemDef[0];
             const types = [];
-            if (elem.firstChild && elem.firstChild.nodeType === 3) { // Node.TEXT_NODE
+            if (elem.firstChild && (elem.firstChild.nodeType === 3 || elem.firstChild.tagName === 'tspan')) { // Node.TEXT_NODE
                 types.push(typeText);
             }
             const elemTagName = elem.tagName.toLowerCase();
@@ -207,6 +207,7 @@
                 types.push(typeBorder);
                 types.push(typeBackground);
             }
+            console.log(types);
             if (bringable) bringableToFront.push(true);
             else bringableToFront.push(null);
             typesByElem.push(types)

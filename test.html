@@ -336,7 +336,10 @@
                 id="Sicilia" class="adm1"></path>
         </g>
         <g>
-            <text x="20" y="30">Test Text</text>
+            <text x="20" y="30">
+                <tspan x="0" dy="1em"> Hey </tspan>
+                <tspan x="0" dy="1em"> Ho </tspan>
+            </text>
         </g>
     </svg>
     <p> Test Test Test Test Test Test Test Test Test Test Test Test Test TestTest Test Test Test Test Test TestTest Test Test Test Test Test TestTest Test Test Test Test Test TestTest Test Test Test Test Test TestTest Test Test Test Test Test Test</p>
@@ -350,6 +353,9 @@
                         const parentCountry = el.parentNode.getAttribute('id').replace('-adm1', '');
                         const countryElem = document.getElementById(parentCountry);
                         if (countryElem) return [[countryElem, 'Italia']];
+                    }
+                    if (el.tagName === 'tspan') {
+                        return [[el.parentNode, 'text']];
                     }
                     return [];
                 },
