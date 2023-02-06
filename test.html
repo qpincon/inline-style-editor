@@ -349,7 +349,7 @@
                     if (el.classList.contains('adm1')) {
                         const parentCountry = el.parentNode.getAttribute('id').replace('-adm1', '');
                         const countryElem = document.getElementById(parentCountry);
-                        if (countryElem) return [countryElem];
+                        if (countryElem) return [[countryElem, 'Italia']];
                     }
                     return [];
                 },
@@ -385,9 +385,12 @@
                     }
                 },
                 inlineDeletable: (elem) => {
-                    console.log(elem.tagName);
                     return elem.tagName === 'path';
-                } 
+                },
+                cssRuleFilter: (el, cssSelector) => {
+                    // if (cssSelector.includes('adm1')) return false;
+                    return true;
+                }
             }
         );
         document.body.addEventListener('click', (e) => {

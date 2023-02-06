@@ -45,8 +45,9 @@ new InlineStyleEditor({
 | ------------- |:-------------:| -----:|
 | listenOnClick      | Boolean | Default to false. If true, click events will be listened on the `<body>` element, and the editor opened where clicked |
 | inlineDeletable      | Function | Defaults to a function always returning true. The function takes the currently selected DOM node, and should return a boolean to determine whether the element can be deleted  |
-| getAdditionalElems      | Function      |   A function called everytime the editor is opened. Should return a *list* of HTMLElement, that will be editable as well |
+| getAdditionalElems      | Function      |   A function called everytime the editor is opened. Should return a *list* of [HTMLElement, name], or HTMLElement (in which case the displayed name will be *Elem i* ). The returned elements will be editable as well |
 | onStyleChanged      | Function      |   A function called everytime a style is modified. The first argument is the current target element, the second the edited CSS rule, or 'inline' if inline, the third the CSS prop name, the fourth the prop value |
+| cssSelector      | Function      |   If defined, the CSS rules to edit can be filtered. The function takes an element and associated CSS selection text. If the function returns false, the current CSS rule will not appear in the popup. |
 | customProps      | Object      |   An object defining custom properties to edit. See below. |
 
 #### customProps

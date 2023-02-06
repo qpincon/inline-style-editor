@@ -35,7 +35,7 @@
     export let onStyleChanged = () => {};
     export let customProps = {};
     export let inlineDeletable = () => true;
-
+    export let cssRuleFilter = null;
     const typeText = "text";
     const typeBorder = "border";
     const typeStroke = "stroke";
@@ -56,7 +56,7 @@
     let helperElemWrapper;
     let pathWithHoles = '';
     let pageDimensions = { width: 0, height: 0 };
-    let targetsToSearch = [];
+    let targetsToSearch = [[]];
     let allRules = []; // list of list of CSS rules, for every target element
     let allTypes = []; // list of list of types (e.g color, border), for every target element
     let selectedElemIndex = 0;
@@ -71,7 +71,7 @@
             init();
         }
     }
-    $: currentElement = targetsToSearch[selectedElemIndex];
+    $: currentElement = targetsToSearch[selectedElemIndex][0];
     $: currentRule = allRules[selectedElemIndex]?.[selectedRuleIndex];
     let curType;
     $: {
@@ -159,7 +159,8 @@
     let warningDisplayed = new Set();
     function getMatchedCSSRules(elems) {
         const sheets = document.styleSheets;
-        return elems.reduce((matchedRulesByElem, el) => {
+        return elems.reduce((matchedRulesByElem, elemDef) => {
+            const el = elemDef[0];
             const matchedRules = ['inline'];
             for (let i in sheets) {
                 try {
@@ -170,6 +171,7 @@
                         if (selectorText.split(',').some(selector => selector === '*')) continue; // skip * selector
                         if (selectorText.endsWith(':hover')) selectorText = selectorText.substring(0, selectorText.length - ':hover'.length);
                         if (el.matches(selectorText)) {
+                            if (cssRuleFilter !== null && !cssRuleFilter(el, rules[r].selectorText)) continue;
                             matchedRules.push(rules[r]);
                         }
                     }
@@ -186,7 +188,8 @@
     }
 
     function getEditableTypes(elems) {
-        return elems.reduce((typesByElem, elem) => {
+        return elems.reduce((typesByElem, elemDef) => {
+            const elem = elemDef[0];
             const types = [];
             if (elem.firstChild && elem.firstChild.nodeType === 3) { // Node.TEXT_NODE
                 types.push(typeText);
@@ -229,7 +232,7 @@
         bringableToFront = [];
         allTypes = [];
         allRules = [];
-        targetsToSearch = [el, ...getAdditionalElems(el)];
+        targetsToSearch = [[el, 'Clicked'], ...getAdditionalElems(el)];
         allTypes = getEditableTypes(targetsToSearch);
         hasDisplayedCustom = false;
         allRules = getMatchedCSSRules(targetsToSearch);
@@ -412,9 +415,9 @@ on:click={overlayClicked}>
     {#if targetsToSearch.length > 1}
     <div class="select-tab">
         <b> Elem </b>
-        {#each targetsToSearch as target, elemIndex}
+        {#each targetsToSearch as [_, name], elemIndex}
             <span class:selected={selectedElemIndex === elemIndex} on:click={() => {selectedElemIndex = elemIndex; selectedRuleIndex = 0;}}>
-                Elem {elemIndex}
+                {name}
             </span>
         {/each}
     </div>
