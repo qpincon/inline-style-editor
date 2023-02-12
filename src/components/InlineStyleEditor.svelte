@@ -177,7 +177,7 @@
                     }
                 } catch(err) {
                     if (!warningDisplayed.has(i)) {
-                        console.log('Style editor: Not able to access', sheets[i].ownerNode, 'sheet. Try CORS loading the sheet if you want to edit it.');
+                        console.warn('Style editor: Not able to access', sheets[i].ownerNode, 'sheet. Try CORS loading the sheet if you want to edit it.');
                         warningDisplayed.add(i);
                     }
                 } 
@@ -207,7 +207,6 @@
                 types.push(typeBorder);
                 types.push(typeBackground);
             }
-            console.log(types);
             if (bringable) bringableToFront.push(true);
             else bringableToFront.push(null);
             typesByElem.push(types)

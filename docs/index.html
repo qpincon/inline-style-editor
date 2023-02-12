@@ -337,7 +337,7 @@
                     if (el.classList.contains('adm1')) {
                         const parentCountry = el.parentNode.getAttribute('id').replace('-adm1', '');
                         const countryElem = document.getElementById(parentCountry);
-                        return [countryElem];
+                        return [[countryElem, 'Italia']];
                     }
                     return [];
                 },
