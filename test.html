@@ -348,16 +348,16 @@
     <script>
         const editor = new InlineStyleEditor(
             {
-                getAdditionalElems: (el) => {
+                getElems: (el) => {
                     if (el.classList.contains('adm1')) {
                         const parentCountry = el.parentNode.getAttribute('id').replace('-adm1', '');
                         const countryElem = document.getElementById(parentCountry);
-                        if (countryElem) return [[countryElem, 'Italia']];
+                        if (countryElem) return [[el, 'clicked'], [countryElem, 'Italia']];
                     }
                     if (el.tagName === 'tspan') {
-                        return [[el.parentNode, 'text']];
+                        return [[el.parentNode, 'text'], [el, 'tspan']];
                     }
-                    return [];
+                    return [[el, 'clicked']];
                 },
                 onStyleChanged(target, eventType, cssProp, value) {
                     console.log(target, eventType, cssProp, value);

@@ -2120,7 +2120,7 @@ function get_each_context_5(ctx, list, i) {
 	return child_ctx;
 }
 
-// (415:4) {#if targetsToSearch.length > 1}
+// (417:4) {#if targetsToSearch.length > 1}
 function create_if_block_9(ctx) {
 	let div;
 	let b;
@@ -2185,7 +2185,7 @@ function create_if_block_9(ctx) {
 	};
 }
 
-// (418:8) {#each targetsToSearch as [_, name], elemIndex}
+// (420:8) {#each targetsToSearch as [_, name], elemIndex}
 function create_each_block_5(ctx) {
 	let span;
 	let t0_value = /*name*/ ctx[82] + "";
@@ -2231,7 +2231,7 @@ function create_each_block_5(ctx) {
 	};
 }
 
-// (427:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
+// (429:8) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
 function create_each_block_4(ctx) {
 	let span;
 	let t_value = /*ruleName*/ ctx[78] + "";
@@ -2280,7 +2280,7 @@ function create_each_block_4(ctx) {
 	};
 }
 
-// (438:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
+// (440:12) {#if type !== 'custom' || (currentRule === 'inline' && type === 'custom' && hasDisplayedCustom )}
 function create_if_block_8(ctx) {
 	let span;
 	let t0_value = /*type*/ ctx[75] + "";
@@ -2326,7 +2326,7 @@ function create_if_block_8(ctx) {
 	};
 }
 
-// (436:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
+// (438:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
 function create_each_block_3(ctx) {
 	let if_block_anchor;
 	let if_block = (/*type*/ ctx[75] !== 'custom' || /*currentRule*/ ctx[17] === 'inline' && /*type*/ ctx[75] === 'custom' && /*hasDisplayedCustom*/ ctx[16]) && create_if_block_8(ctx);
@@ -2361,7 +2361,7 @@ function create_each_block_3(ctx) {
 	};
 }
 
-// (443:4) {#if allTypes[selectedElemIndex]}
+// (445:4) {#if allTypes[selectedElemIndex]}
 function create_if_block(ctx) {
 	let div;
 	let t0;
@@ -2492,7 +2492,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (454:16) {:else}
+// (456:16) {:else}
 function create_else_block(ctx) {
 	let span;
 	let t_value = /*selectedName*/ ctx[66] + "";
@@ -2516,7 +2516,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (448:16) {#if choices.props.length > 1}
+// (450:16) {#if choices.props.length > 1}
 function create_if_block_7(ctx) {
 	let div;
 	let select;
@@ -2590,7 +2590,7 @@ function create_if_block_7(ctx) {
 	};
 }
 
-// (450:24) {#each choices.props as propName, i}
+// (452:24) {#each choices.props as propName, i}
 function create_each_block_2(ctx) {
 	let option;
 	let t0_value = /*propName*/ ctx[72] + "";
@@ -2625,7 +2625,7 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (477:50) 
+// (479:50) 
 function create_if_block_6(ctx) {
 	let colorpicker;
 	let current;
@@ -2671,7 +2671,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (467:51) 
+// (469:51) 
 function create_if_block_4(ctx) {
 	let select;
 	let show_if = !/*choices*/ ctx[65].includes(/*allCurrentPropDefs*/ ctx[14][/*selectedName*/ ctx[66]].value);
@@ -2764,7 +2764,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (458:16) {#if choices.type === 'slider'}
+// (460:16) {#if choices.type === 'slider'}
 function create_if_block_3(ctx) {
 	let input;
 	let input_min_value;
@@ -2839,7 +2839,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (470:24) {#if !choices.includes(allCurrentPropDefs[selectedName].value)}
+// (472:24) {#if !choices.includes(allCurrentPropDefs[selectedName].value)}
 function create_if_block_5(ctx) {
 	let option;
 
@@ -2860,7 +2860,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (473:24) {#each choices as choice}
+// (475:24) {#each choices as choice}
 function create_each_block_1(ctx) {
 	let option;
 	let t_value = /*choice*/ ctx[69] + "";
@@ -2898,7 +2898,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (445:8) {#each propsByType as choices}
+// (447:8) {#each propsByType as choices}
 function create_each_block(ctx) {
 	let div;
 	let t0;
@@ -3044,7 +3044,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (485:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
+// (487:8) {#if currentRule === 'inline' && bringableToFront[selectedElemIndex] !== null}
 function create_if_block_2(ctx) {
 	let div;
 	let mounted;
@@ -3078,7 +3078,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (490:8) {#if currentRule === 'inline' && inlineDeletable(currentElement)}
+// (492:8) {#if currentRule === 'inline' && inlineDeletable(currentElement)}
 function create_if_block_1(ctx) {
 	let div;
 	let mounted;
@@ -3513,10 +3513,7 @@ function instance($$self, $$props, $$invalidate) {
 		"background-color": { type: "color" }
 	};
 
-	let { getAdditionalElems = () => {
-		return [];
-	} } = $$props;
-
+	let { getElems = null } = $$props;
 	let { listenOnClick = false } = $$props;
 
 	let { onStyleChanged = () => {
@@ -3722,7 +3719,8 @@ function instance($$self, $$props, $$invalidate) {
 		$$invalidate(15, bringableToFront = []);
 		$$invalidate(4, allTypes = []);
 		$$invalidate(3, allRules = []);
-		$$invalidate(2, targetsToSearch = [[el, 'Clicked'], ...getAdditionalElems(el)]);
+		console.log(getElems, getElems(el));
+		if (getElems) $$invalidate(2, targetsToSearch = getElems(el)); else $$invalidate(2, targetsToSearch = [[el, 'Clicked']]);
 		$$invalidate(4, allTypes = getEditableTypes(targetsToSearch));
 		$$invalidate(16, hasDisplayedCustom = false);
 		$$invalidate(3, allRules = getMatchedCSSRules(targetsToSearch));
@@ -3917,7 +3915,7 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	$$self.$$set = $$props => {
-		if ('getAdditionalElems' in $$props) $$invalidate(25, getAdditionalElems = $$props.getAdditionalElems);
+		if ('getElems' in $$props) $$invalidate(25, getElems = $$props.getElems);
 		if ('listenOnClick' in $$props) $$invalidate(26, listenOnClick = $$props.listenOnClick);
 		if ('onStyleChanged' in $$props) $$invalidate(27, onStyleChanged = $$props.onStyleChanged);
 		if ('customProps' in $$props) $$invalidate(28, customProps = $$props.customProps);
@@ -3985,7 +3983,7 @@ function instance($$self, $$props, $$invalidate) {
 		deleteElem,
 		deleteProp,
 		selectRule,
-		getAdditionalElems,
+		getElems,
 		listenOnClick,
 		onStyleChanged,
 		customProps,
@@ -4019,7 +4017,7 @@ class InlineStyleEditor$1 extends SvelteComponent {
 			create_fragment,
 			safe_not_equal,
 			{
-				getAdditionalElems: 25,
+				getElems: 25,
 				listenOnClick: 26,
 				onStyleChanged: 27,
 				customProps: 28,

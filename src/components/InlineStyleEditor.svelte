@@ -30,7 +30,7 @@
     };
     
 
-    export let getAdditionalElems = () => {return []};
+    export let getElems = null;
     export let listenOnClick = false;
     export let onStyleChanged = () => {};
     export let customProps = {};
@@ -232,7 +232,9 @@
         bringableToFront = [];
         allTypes = [];
         allRules = [];
-        targetsToSearch = [[el, 'Clicked'], ...getAdditionalElems(el)];
+        console.log(getElems, getElems(el));
+        if (getElems) targetsToSearch = getElems(el);
+        else targetsToSearch = [[el, 'Clicked']];
         allTypes = getEditableTypes(targetsToSearch);
         hasDisplayedCustom = false;
         allRules = getMatchedCSSRules(targetsToSearch);
