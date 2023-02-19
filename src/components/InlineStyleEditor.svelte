@@ -232,7 +232,6 @@
         bringableToFront = [];
         allTypes = [];
         allRules = [];
-        console.log(getElems, getElems(el));
         if (getElems) targetsToSearch = getElems(el);
         else targetsToSearch = [[el, 'Clicked']];
         allTypes = getEditableTypes(targetsToSearch);
