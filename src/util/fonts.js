@@ -70,7 +70,12 @@ function listFonts() {
     while (!done) {
         const font = it.next();
         if (!font.done) {
-            arr.push(font.value[0].family);
+            const value = font.value;
+            let fontName;
+            // webkit returns directly an object
+            if (value.length) fontName = value[0].family;
+            else fontName = value.family;
+            arr.push(fontName);
         } else {
             done = font.done;
         }
