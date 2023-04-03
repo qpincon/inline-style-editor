@@ -328,7 +328,6 @@
         </g>
     </svg>
 
-    <!-- <script src="index.js"></script> -->
     <script src="https://unpkg.com/inline-style-editor"></script>
     <script>
         const editor = new InlineStyleEditor(
@@ -337,9 +336,12 @@
                     if (el.classList.contains('adm1')) {
                         const parentCountry = el.parentNode.getAttribute('id').replace('-adm1', '');
                         const countryElem = document.getElementById(parentCountry);
-                        return [[el, 'Clicked'], [countryElem, 'Italia']];
+                        if (countryElem) return [[el, 'clicked'], [countryElem, 'Italia']];
                     }
-                    return [];
+                    if (el.tagName === 'tspan') {
+                        return [[el.parentNode, 'text'], [el, 'tspan']];
+                    }
+                    return [[el, 'clicked']];
                 },
                 onStyleChanged(target, eventType, cssProp, value) {
                     console.log(target, eventType, cssProp, value);
@@ -371,6 +373,13 @@
                             }
                         }
                     }
+                },
+                inlineDeletable: (elem) => {
+                    return elem.tagName === 'path';
+                },
+                cssRuleFilter: (el, cssSelector) => {
+                    // if (cssSelector.includes('adm1')) return false;
+                    return true;
                 }
             }
         );
