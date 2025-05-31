@@ -8,8 +8,22 @@
   },
   "author": "Quentin Pinçon",
   "license": "ISC",
-  "keywords": ["style", "editor", "css", "graphical", "gui", "lowcode"],
+  "keywords": [
+    "style",
+    "editor",
+    "css",
+    "graphical",
+    "gui",
+    "lowcode"
+  ],
   "sideEffects": false,
+  "types": "index.d.ts",
+  "typings": "index.d.ts",
+  "files": [
+    "dist/",
+    "index.d.ts",
+    "README.md"
+  ],
   "svelte": "src/index.js",
   "module": "dist/inline-style-editor.mjs",
   "main": "dist/inline-style-editor.js",
@@ -17,6 +31,7 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^22.0.2",
     "@rollup/plugin-node-resolve": "^13.3.0",
+    "rollup": "^4.41.1",
     "rollup-plugin-analyzer": "^4.0.0",
     "rollup-plugin-filesize": "^9.1.2",
     "rollup-plugin-import-css": "^3.0.3",

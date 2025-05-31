@@ -7,6 +7,7 @@
     max-width: 300px;
     border-radius: 5px;
     box-shadow: 0px 8px 17px 2px #0000007c;
+
     select {
         appearance: none;
         -webkit-appearance: none;
@@ -22,6 +23,7 @@
         max-width: 100%;
         display: inline-block;
     }
+
     select:not([multiple]) {
         background-image: linear-gradient(45deg, transparent 49%, #212121 51%),
             linear-gradient(135deg, #212121 51%, transparent 49%);
@@ -30,14 +32,28 @@
         background-repeat: no-repeat;
         padding: 5px 25px 5px 5px;
     }
+
     input[type="range"] {
         width: 100%;
         margin: auto;
     }
+
+    .prop-name {
+        display: flex;
+        align-items: center;
+
+        &>span {
+            margin-left: 4px;
+        }
+    }
+
     .delete {
         cursor: pointer;
         font-size: 20px;
+        margin: 0 4px;
+        margin-bottom: 2px;
     }
+
     .select-tab {
         display: flex;
         align-items: center;
@@ -47,7 +63,7 @@
         border-bottom: 1px solid #dee2e6;
     }
 
-    .select-tab > span {
+    .select-tab>span {
         text-overflow: ellipsis;
         overflow: hidden;
         white-space: nowrap;
@@ -57,43 +73,48 @@
         color: #718096;
         cursor: pointer;
     }
-    .select-tab > b {
+
+    .select-tab>b {
         margin-right: 5px;
         color: #5d5d5d;
     }
+
     .select-tab span.selected {
         border-radius: 2px;
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, .1), 0 1px 2px 0 rgba(0, 0, 0, .06);
         color: #0069d9;
         background-color: white;
     }
+
     .editor {
         padding: 5px;
     }
-    
+
     .editor .prop-section {
         display: flex;
         align-items: center;
         margin: 5px 0;
         align-items: baseline;
     }
-    
+
     .editor .prop-section>span {
         margin: 0 5px;
     }
-    
+
     .editor .prop-section :first-child {
         color: #5d5d5d;
         font-weight: bold;
     }
-    
+
     .editor .btn {
         &.active {
             background-color: #4d84bf;
         }
+
         &.delete-elem {
             background-color: #d13737;
         }
+
         margin: 0 5px;
         background-color: #3333330d;
         border-radius: 4px;
@@ -103,6 +124,7 @@
         display: inline-block;
         padding: 5px;
     }
+
     .close-button {
         position: absolute;
         top: -7px;
@@ -121,17 +143,17 @@
     .layout_default.picker_wrapper {
         background: none;
         box-shadow: none;
-        width: 17em;
-    
+        width: 100%;
+
         .picker_done {
             display: none;
         }
-    
+
         .picker_slider,
         .picker_selector {
             padding: 0.5em;
         }
-    
+
         .picker_editor input {
             font-size: 0.7rem;
         }
@@ -144,6 +166,7 @@
     top: 0;
     left: 0;
     pointer-events: none;
+
     .overlay-over {
         fill: #000000A0;
         clip-path: url(#overlay-clip);

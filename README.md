@@ -29,6 +29,7 @@ Manual opening of editor:
 ```js
 const editor = new InlineStyleEditor();
 document.body.addEventListener('click', (e) => {
+    if (editor.isOpened()) return;
     const target = e.target;
     editor.open(target, e.pageX, e.pageY);
 });
@@ -48,6 +49,8 @@ new InlineStyleEditor({
 | getElems      | Function      |   A function called everytime the editor is opened. Should return a *list* of [HTMLElement, name], or HTMLElement (in which case the displayed name will be *Elem i* ). The returned elements will be editable as well. The first argument is the element on which the editor is about to be opened. |
 | onStyleChanged      | Function      |   A function called everytime a style is modified. The first argument is the current target element, the second the edited CSS rule, or 'inline' if inline, the third the CSS prop name, the fourth the prop value |
 | cssSelector      | Function      |   If defined, the CSS rules to edit can be filtered. The function takes an element and associated CSS selection text. If the function returns false, the current CSS rule will not appear in the popup. |
+| cssRuleFilter      | Function      |   A function taking an DOM element and the css selector for the CSS rule that will be editable, that should return `false` if the rule should not display in the editor  |
+| getCssRuleName      | Function      |   A function taking a CSS text selector and the element on which the editor opened, returning a new string for this selector to display in the editor   |
 | customProps      | Object      |   An object defining custom properties to edit. See below. |
 
 #### customProps
