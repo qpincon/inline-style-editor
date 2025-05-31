@@ -32,6 +32,5 @@ export function pascalCaseToSentence(str) {
 
 export function nbChars(strArray) {
     if (!strArray) return 0;
-    console.log(strArray, strArray.reduce((acc, str) => acc + str.length, 0));
     return strArray.reduce((acc, str) => acc + str.length, 0);
 }
