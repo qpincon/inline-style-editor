@@ -6464,4 +6464,3 @@ class InlineStyleEditor {
 }
 
 export { InlineStyleEditor as default };
-//# sourceMappingURL=inline-style-editor.mjs.map

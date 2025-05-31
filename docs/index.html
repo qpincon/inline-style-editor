@@ -377,7 +377,6 @@
                     return true;
                 },
                 getCssRuleName: (ruleName, el) => {
-                    console.log(el);
                     if (ruleName.includes('.adm1:hover')) return 'All regions hover';
                     if (ruleName.includes('.adm1')) return 'All regions';
                     if (ruleName === "inline") return "Selected element";
@@ -386,7 +385,8 @@
             }
         );
         document.body.addEventListener('click', (e) => {
-            if (editor.isOpened()) return;
+            const editorDomNode = document.querySelector('.ise');
+            if (editor.isOpened() && editorDomNode.contains(e.target)) return;
             const target = e.target;
             editor.open(target, e.pageX, e.pageY);
         });

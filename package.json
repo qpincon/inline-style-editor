@@ -1,6 +1,6 @@
 {
   "name": "inline-style-editor",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Update CSS rules or add inline style to elements visualy",
   "scripts": {
     "build": "rollup --config",
@@ -21,10 +21,11 @@
   "typings": "index.d.ts",
   "files": [
     "dist/",
+    "src/",
     "index.d.ts",
     "README.md"
   ],
-  "svelte": "src/index.js",
+  "svelte": "src/components/InlineStyleEditor.svelte",
   "module": "dist/inline-style-editor.mjs",
   "main": "dist/inline-style-editor.js",
   "style": "inline-style-editor.css",

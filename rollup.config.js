@@ -27,8 +27,17 @@ export default [
                 plugins: [terser()],
             }],
         plugins: [
-            svelte(),
-            resolve({ browser: true }),
+            svelte({
+                compilerOptions: {
+                    dev: false,
+                    generate: 'client',
+                }
+            }
+            ),
+            resolve({
+                browser: true,
+                dedupe: ['svelte']
+            }),
             commonjs(),
             scss({
                 fileName: pkg.style,

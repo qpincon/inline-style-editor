@@ -403,8 +403,10 @@
                 }
             }
         );
+
         document.body.addEventListener('click', (e) => {
-            if (editor.isOpened()) return;
+            const editorDomNode = document.querySelector('.ise');
+            if (editor.isOpened() && editorDomNode.contains(e.target)) return;
             const target = e.target;
             editor.open(target, e.pageX, e.pageY);
         });

@@ -454,7 +454,6 @@
     }
 
     function selectRule(ruleIndex) {
-        console.log("selectrule", ruleIndex);
         const newRule = allRules[selectedElemIndex]?.[ruleIndex];
         if (newRule !== "inline" && selectedTypeIndex === allTypes[selectedElemIndex].length - 1) {
             selectedTypeIndex = 0;
