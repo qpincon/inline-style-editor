@@ -1,21 +1,25 @@
 <script>
     import Picker from "vanilla-picker/csp";
-
     import { onMount, onDestroy } from "svelte";
 
-    export let value = "#AAAAAAFF";
-    export let options = {};
-    export let onChange = () => {};
-    let self;
-    let pickerElem;
+    // Props
+    let { value = $bindable("#AAAAAAFF"), options = {}, onChange = () => {} } = $props();
 
-    $: if (pickerElem) {
-        pickerElem.setColor(value);
-    }
+    // State
+    let self = $state();
+    let pickerElem = $state();
+
+    // Effect to update picker when value changes
+    $effect(() => {
+        if (pickerElem) {
+            pickerElem.setColor(value);
+        }
+    });
 
     export function setColor(rgbaString) {
         pickerElem.setColor(rgbaString);
     }
+
     function setValue(val) {
         if (val === value) return;
         onChange(val, value);
@@ -31,7 +35,7 @@
     });
 
     onDestroy(() => {
-        pickerElem.destroy();
+        pickerElem?.destroy();
     });
 
     function init(opts) {

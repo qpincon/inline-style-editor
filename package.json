@@ -1,6 +1,6 @@
 {
   "name": "inline-style-editor",
-  "version": "1.3.7",
+  "version": "1.4.0",
   "description": "Update CSS rules or add inline style to elements visualy",
   "scripts": {
     "build": "rollup --config",
@@ -27,25 +27,25 @@
   "svelte": "src/index.js",
   "module": "dist/inline-style-editor.mjs",
   "main": "dist/inline-style-editor.js",
-  "style": "dist/inline-style-editor.css",
+  "style": "inline-style-editor.css",
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^22.0.2",
-    "@rollup/plugin-node-resolve": "^13.3.0",
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
     "rollup": "^4.41.1",
     "rollup-plugin-analyzer": "^4.0.0",
-    "rollup-plugin-filesize": "^9.1.2",
-    "rollup-plugin-import-css": "^3.0.3",
+    "rollup-plugin-filesize": "^10.0.0",
+    "rollup-plugin-import-css": "^4.0.1",
     "rollup-plugin-sass": "^1.2.13",
-    "rollup-plugin-scss": "^3.0.0",
+    "rollup-plugin-scss": "^4.0.1",
     "rollup-plugin-svelte": "^7.1.0",
     "rollup-plugin-terser": "^7.0.2",
-    "rollup-plugin-visualizer": "^5.8.0",
+    "rollup-plugin-visualizer": "^6.0.1",
     "sass": "^1.54.4"
   },
   "dependencies": {
     "d3-contour": "^4.0.0",
     "parse-svg-path": "^0.1.2",
-    "svelte": "^3.49.0",
+    "svelte": "^5.33.10",
     "vanilla-picker": "^2.12.1"
   }
 }

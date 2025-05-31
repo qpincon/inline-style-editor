@@ -24,6 +24,7 @@ export interface SliderDefinition {
     getter: (el: HTMLElement) => number | null;
     setter: (el: SVGElement, val: number) => void;
 }
+
 export interface InlineStyleEditorOptions {
     onStyleChanged?: (
         target: HTMLElement,
@@ -34,5 +35,6 @@ export interface InlineStyleEditorOptions {
     getElems: (el: HTMLElement) => void;
     customProps: Record<string, ColorDefinition | SelectDefinition | SliderDefinition>;
     cssRuleFilter: (el: HTMLElement, cssSelector: string) => boolean;
+    getCssRuleName: (ruleName: string, el: HTMLElement) => string;
     inlineDeletable: (el: HTMLElement) => boolean,
 }

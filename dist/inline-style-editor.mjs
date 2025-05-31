@@ -1,398 +1,3795 @@
-function noop$1() { }
-function run(fn) {
-    return fn();
-}
-function blank_object() {
-    return Object.create(null);
-}
-function run_all(fns) {
-    fns.forEach(run);
-}
-function is_function(thing) {
-    return typeof thing === 'function';
-}
-function safe_not_equal(a, b) {
-    return a != a ? b == b : a !== b || ((a && typeof a === 'object') || typeof a === 'function');
-}
-function is_empty(obj) {
-    return Object.keys(obj).length === 0;
-}
-function append(target, node) {
-    target.appendChild(node);
-}
-function insert(target, node, anchor) {
-    target.insertBefore(node, anchor || null);
-}
-function detach(node) {
-    if (node.parentNode) {
-        node.parentNode.removeChild(node);
-    }
-}
-function destroy_each(iterations, detaching) {
-    for (let i = 0; i < iterations.length; i += 1) {
-        if (iterations[i])
-            iterations[i].d(detaching);
-    }
-}
-function element(name) {
-    return document.createElement(name);
-}
-function svg_element(name) {
-    return document.createElementNS('http://www.w3.org/2000/svg', name);
-}
-function text(data) {
-    return document.createTextNode(data);
-}
-function space() {
-    return text(' ');
-}
-function empty() {
-    return text('');
-}
-function listen(node, event, handler, options) {
-    node.addEventListener(event, handler, options);
-    return () => node.removeEventListener(event, handler, options);
-}
-function attr(node, attribute, value) {
-    if (value == null)
-        node.removeAttribute(attribute);
-    else if (node.getAttribute(attribute) !== value)
-        node.setAttribute(attribute, value);
-}
-function children(element) {
-    return Array.from(element.childNodes);
-}
-function set_data(text, data) {
-    data = '' + data;
-    if (text.data === data)
-        return;
-    text.data = data;
-}
-function set_style(node, key, value, important) {
-    {
-        node.style.setProperty(key, value, '');
-    }
-}
-function toggle_class(element, name, toggle) {
-    element.classList[toggle ? 'add' : 'remove'](name);
+var DEV = false;
+
+// Store the references to globals in case someone tries to monkey patch these, causing the below
+// to de-opt (this occurs often when using popular extensions).
+var is_array = Array.isArray;
+var index_of = Array.prototype.indexOf;
+var array_from = Array.from;
+var define_property = Object.defineProperty;
+var get_descriptor = Object.getOwnPropertyDescriptor;
+var get_descriptors = Object.getOwnPropertyDescriptors;
+var object_prototype = Object.prototype;
+var array_prototype = Array.prototype;
+var get_prototype_of = Object.getPrototypeOf;
+var is_extensible = Object.isExtensible;
+
+/** @param {Array<() => void>} arr */
+function run_all(arr) {
+	for (var i = 0; i < arr.length; i++) {
+		arr[i]();
+	}
 }
 
-let current_component;
-function set_current_component(component) {
-    current_component = component;
-}
-function get_current_component() {
-    if (!current_component)
-        throw new Error('Function called outside component initialization');
-    return current_component;
-}
 /**
- * The `onMount` function schedules a callback to run as soon as the component has been mounted to the DOM.
- * It must be called during the component's initialisation (but doesn't need to live *inside* the component;
- * it can be called from an external module).
+ * When encountering a situation like `let [a, b, c] = $derived(blah())`,
+ * we need to stash an intermediate value that `a`, `b`, and `c` derive
+ * from, in case it's an iterable
+ * @template T
+ * @param {ArrayLike<T> | Iterable<T>} value
+ * @param {number} [n]
+ * @returns {Array<T>}
+ */
+function to_array(value, n) {
+	// return arrays unchanged
+	if (Array.isArray(value)) {
+		return value;
+	}
+
+	// if value is not iterable, or `n` is unspecified (indicates a rest
+	// element, which means we're not concerned about unbounded iterables)
+	// convert to an array with `Array.from`
+	if (!(Symbol.iterator in value)) {
+		return Array.from(value);
+	}
+
+	// otherwise, populate an array with `n` values
+
+	/** @type {T[]} */
+	const array = [];
+
+	for (const element of value) {
+		array.push(element);
+		if (array.length === n) break;
+	}
+
+	return array;
+}
+
+const DERIVED = 1 << 1;
+const EFFECT = 1 << 2;
+const RENDER_EFFECT = 1 << 3;
+const BLOCK_EFFECT = 1 << 4;
+const BRANCH_EFFECT = 1 << 5;
+const ROOT_EFFECT = 1 << 6;
+const BOUNDARY_EFFECT = 1 << 7;
+const UNOWNED = 1 << 8;
+const DISCONNECTED = 1 << 9;
+const CLEAN = 1 << 10;
+const DIRTY = 1 << 11;
+const MAYBE_DIRTY = 1 << 12;
+const INERT = 1 << 13;
+const DESTROYED = 1 << 14;
+const EFFECT_RAN = 1 << 15;
+/** 'Transparent' effects do not create a transition boundary */
+const EFFECT_TRANSPARENT = 1 << 16;
+const HEAD_EFFECT = 1 << 19;
+const EFFECT_HAS_DERIVED = 1 << 20;
+const EFFECT_IS_UPDATING = 1 << 21;
+
+const STATE_SYMBOL = Symbol('$state');
+const LEGACY_PROPS = Symbol('legacy props');
+const LOADING_ATTR_SYMBOL = Symbol('');
+
+/** @import { Equals } from '#client' */
+
+/** @type {Equals} */
+function equals(value) {
+	return value === this.v;
+}
+
+/**
+ * @param {unknown} a
+ * @param {unknown} b
+ * @returns {boolean}
+ */
+function safe_not_equal(a, b) {
+	return a != a
+		? b == b
+		: a !== b || (a !== null && typeof a === 'object') || typeof a === 'function';
+}
+
+/** @type {Equals} */
+function safe_equals(value) {
+	return !safe_not_equal(value, this.v);
+}
+
+/* This file is generated by scripts/process-messages/index.js. Do not edit! */
+
+
+/**
+ * `%rune%` cannot be used inside an effect cleanup function
+ * @param {string} rune
+ * @returns {never}
+ */
+function effect_in_teardown(rune) {
+	{
+		throw new Error(`https://svelte.dev/e/effect_in_teardown`);
+	}
+}
+
+/**
+ * Effect cannot be created inside a `$derived` value that was not itself created inside an effect
+ * @returns {never}
+ */
+function effect_in_unowned_derived() {
+	{
+		throw new Error(`https://svelte.dev/e/effect_in_unowned_derived`);
+	}
+}
+
+/**
+ * `%rune%` can only be used inside an effect (e.g. during component initialisation)
+ * @param {string} rune
+ * @returns {never}
+ */
+function effect_orphan(rune) {
+	{
+		throw new Error(`https://svelte.dev/e/effect_orphan`);
+	}
+}
+
+/**
+ * Maximum update depth exceeded. This can happen when a reactive block or effect repeatedly sets a new value. Svelte limits the number of nested updates to prevent infinite loops
+ * @returns {never}
+ */
+function effect_update_depth_exceeded() {
+	{
+		throw new Error(`https://svelte.dev/e/effect_update_depth_exceeded`);
+	}
+}
+
+/**
+ * Cannot do `bind:%key%={undefined}` when `%key%` has a fallback value
+ * @param {string} key
+ * @returns {never}
+ */
+function props_invalid_value(key) {
+	{
+		throw new Error(`https://svelte.dev/e/props_invalid_value`);
+	}
+}
+
+/**
+ * Property descriptors defined on `$state` objects must contain `value` and always be `enumerable`, `configurable` and `writable`.
+ * @returns {never}
+ */
+function state_descriptors_fixed() {
+	{
+		throw new Error(`https://svelte.dev/e/state_descriptors_fixed`);
+	}
+}
+
+/**
+ * Cannot set prototype of `$state` object
+ * @returns {never}
+ */
+function state_prototype_fixed() {
+	{
+		throw new Error(`https://svelte.dev/e/state_prototype_fixed`);
+	}
+}
+
+/**
+ * Updating state inside a derived or a template expression is forbidden. If the value should not be reactive, declare it without `$state`
+ * @returns {never}
+ */
+function state_unsafe_mutation() {
+	{
+		throw new Error(`https://svelte.dev/e/state_unsafe_mutation`);
+	}
+}
+
+let tracing_mode_flag = false;
+
+const EACH_ITEM_REACTIVE = 1;
+const EACH_INDEX_REACTIVE = 1 << 1;
+/** See EachBlock interface metadata.is_controlled for an explanation what this is */
+const EACH_IS_CONTROLLED = 1 << 2;
+const EACH_IS_ANIMATED = 1 << 3;
+const EACH_ITEM_IMMUTABLE = 1 << 4;
+
+const PROPS_IS_IMMUTABLE = 1;
+const PROPS_IS_UPDATED = 1 << 2;
+const PROPS_IS_BINDABLE = 1 << 3;
+const PROPS_IS_LAZY_INITIAL = 1 << 4;
+
+const TEMPLATE_FRAGMENT = 1;
+const TEMPLATE_USE_IMPORT_NODE = 1 << 1;
+
+const UNINITIALIZED = Symbol();
+
+const NAMESPACE_HTML = 'http://www.w3.org/1999/xhtml';
+
+/* This file is generated by scripts/process-messages/index.js. Do not edit! */
+
+
+/**
+ * `%name%(...)` can only be used during component initialisation
+ * @param {string} name
+ * @returns {never}
+ */
+function lifecycle_outside_component(name) {
+	{
+		throw new Error(`https://svelte.dev/e/lifecycle_outside_component`);
+	}
+}
+
+/** @import { ComponentContext } from '#client' */
+
+
+/** @type {ComponentContext | null} */
+let component_context = null;
+
+/** @param {ComponentContext | null} context */
+function set_component_context(context) {
+	component_context = context;
+}
+
+/**
+ * @param {Record<string, unknown>} props
+ * @param {any} runes
+ * @param {Function} [fn]
+ * @returns {void}
+ */
+function push(props, runes = false, fn) {
+	var ctx = (component_context = {
+		p: component_context,
+		c: null,
+		d: false,
+		e: null,
+		m: false,
+		s: props,
+		x: null,
+		l: null
+	});
+
+	teardown(() => {
+		/** @type {ComponentContext} */ (ctx).d = true;
+	});
+}
+
+/**
+ * @template {Record<string, any>} T
+ * @param {T} [component]
+ * @returns {T}
+ */
+function pop(component) {
+	const context_stack_item = component_context;
+	if (context_stack_item !== null) {
+		if (component !== undefined) {
+			context_stack_item.x = component;
+		}
+		const component_effects = context_stack_item.e;
+		if (component_effects !== null) {
+			var previous_effect = active_effect;
+			var previous_reaction = active_reaction;
+			context_stack_item.e = null;
+			try {
+				for (var i = 0; i < component_effects.length; i++) {
+					var component_effect = component_effects[i];
+					set_active_effect(component_effect.effect);
+					set_active_reaction(component_effect.reaction);
+					effect(component_effect.fn);
+				}
+			} finally {
+				set_active_effect(previous_effect);
+				set_active_reaction(previous_reaction);
+			}
+		}
+		component_context = context_stack_item.p;
+		context_stack_item.m = true;
+	}
+	// Micro-optimization: Don't set .a above to the empty object
+	// so it can be garbage-collected when the return here is unused
+	return component || /** @type {T} */ ({});
+}
+
+/** @returns {boolean} */
+function is_runes() {
+	return true;
+}
+
+/** @import { Source } from '#client' */
+
+/**
+ * @template T
+ * @param {T} value
+ * @returns {T}
+ */
+function proxy(value) {
+	// if non-proxyable, or is already a proxy, return `value`
+	if (typeof value !== 'object' || value === null || STATE_SYMBOL in value) {
+		return value;
+	}
+
+	const prototype = get_prototype_of(value);
+
+	if (prototype !== object_prototype && prototype !== array_prototype) {
+		return value;
+	}
+
+	/** @type {Map<any, Source<any>>} */
+	var sources = new Map();
+	var is_proxied_array = is_array(value);
+	var version = state(0);
+	var reaction = active_reaction;
+
+	/**
+	 * @template T
+	 * @param {() => T} fn
+	 */
+	var with_parent = (fn) => {
+		var previous_reaction = active_reaction;
+		set_active_reaction(reaction);
+
+		/** @type {T} */
+		var result = fn();
+
+		set_active_reaction(previous_reaction);
+		return result;
+	};
+
+	if (is_proxied_array) {
+		// We need to create the length source eagerly to ensure that
+		// mutations to the array are properly synced with our proxy
+		sources.set('length', state(/** @type {any[]} */ (value).length));
+	}
+
+	return new Proxy(/** @type {any} */ (value), {
+		defineProperty(_, prop, descriptor) {
+			if (
+				!('value' in descriptor) ||
+				descriptor.configurable === false ||
+				descriptor.enumerable === false ||
+				descriptor.writable === false
+			) {
+				// we disallow non-basic descriptors, because unless they are applied to the
+				// target object — which we avoid, so that state can be forked — we will run
+				// afoul of the various invariants
+				// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/Proxy/getOwnPropertyDescriptor#invariants
+				state_descriptors_fixed();
+			}
+
+			var s = sources.get(prop);
+
+			if (s === undefined) {
+				s = with_parent(() => state(descriptor.value));
+				sources.set(prop, s);
+			} else {
+				set(
+					s,
+					with_parent(() => proxy(descriptor.value))
+				);
+			}
+
+			return true;
+		},
+
+		deleteProperty(target, prop) {
+			var s = sources.get(prop);
+
+			if (s === undefined) {
+				if (prop in target) {
+					sources.set(
+						prop,
+						with_parent(() => state(UNINITIALIZED))
+					);
+					update_version(version);
+				}
+			} else {
+				// When working with arrays, we need to also ensure we update the length when removing
+				// an indexed property
+				if (is_proxied_array && typeof prop === 'string') {
+					var ls = /** @type {Source<number>} */ (sources.get('length'));
+					var n = Number(prop);
+
+					if (Number.isInteger(n) && n < ls.v) {
+						set(ls, n);
+					}
+				}
+				set(s, UNINITIALIZED);
+				update_version(version);
+			}
+
+			return true;
+		},
+
+		get(target, prop, receiver) {
+			if (prop === STATE_SYMBOL) {
+				return value;
+			}
+
+			var s = sources.get(prop);
+			var exists = prop in target;
+
+			// create a source, but only if it's an own property and not a prototype property
+			if (s === undefined && (!exists || get_descriptor(target, prop)?.writable)) {
+				s = with_parent(() => state(proxy(exists ? target[prop] : UNINITIALIZED)));
+				sources.set(prop, s);
+			}
+
+			if (s !== undefined) {
+				var v = get(s);
+				return v === UNINITIALIZED ? undefined : v;
+			}
+
+			return Reflect.get(target, prop, receiver);
+		},
+
+		getOwnPropertyDescriptor(target, prop) {
+			var descriptor = Reflect.getOwnPropertyDescriptor(target, prop);
+
+			if (descriptor && 'value' in descriptor) {
+				var s = sources.get(prop);
+				if (s) descriptor.value = get(s);
+			} else if (descriptor === undefined) {
+				var source = sources.get(prop);
+				var value = source?.v;
+
+				if (source !== undefined && value !== UNINITIALIZED) {
+					return {
+						enumerable: true,
+						configurable: true,
+						value,
+						writable: true
+					};
+				}
+			}
+
+			return descriptor;
+		},
+
+		has(target, prop) {
+			if (prop === STATE_SYMBOL) {
+				return true;
+			}
+
+			var s = sources.get(prop);
+			var has = (s !== undefined && s.v !== UNINITIALIZED) || Reflect.has(target, prop);
+
+			if (
+				s !== undefined ||
+				(active_effect !== null && (!has || get_descriptor(target, prop)?.writable))
+			) {
+				if (s === undefined) {
+					s = with_parent(() => state(has ? proxy(target[prop]) : UNINITIALIZED));
+					sources.set(prop, s);
+				}
+
+				var value = get(s);
+				if (value === UNINITIALIZED) {
+					return false;
+				}
+			}
+
+			return has;
+		},
+
+		set(target, prop, value, receiver) {
+			var s = sources.get(prop);
+			var has = prop in target;
+
+			// variable.length = value -> clear all signals with index >= value
+			if (is_proxied_array && prop === 'length') {
+				for (var i = value; i < /** @type {Source<number>} */ (s).v; i += 1) {
+					var other_s = sources.get(i + '');
+					if (other_s !== undefined) {
+						set(other_s, UNINITIALIZED);
+					} else if (i in target) {
+						// If the item exists in the original, we need to create a uninitialized source,
+						// else a later read of the property would result in a source being created with
+						// the value of the original item at that index.
+						other_s = with_parent(() => state(UNINITIALIZED));
+						sources.set(i + '', other_s);
+					}
+				}
+			}
+
+			// If we haven't yet created a source for this property, we need to ensure
+			// we do so otherwise if we read it later, then the write won't be tracked and
+			// the heuristics of effects will be different vs if we had read the proxied
+			// object property before writing to that property.
+			if (s === undefined) {
+				if (!has || get_descriptor(target, prop)?.writable) {
+					s = with_parent(() => state(undefined));
+					set(
+						s,
+						with_parent(() => proxy(value))
+					);
+					sources.set(prop, s);
+				}
+			} else {
+				has = s.v !== UNINITIALIZED;
+				set(
+					s,
+					with_parent(() => proxy(value))
+				);
+			}
+
+			var descriptor = Reflect.getOwnPropertyDescriptor(target, prop);
+
+			// Set the new value before updating any signals so that any listeners get the new value
+			if (descriptor?.set) {
+				descriptor.set.call(receiver, value);
+			}
+
+			if (!has) {
+				// If we have mutated an array directly, we might need to
+				// signal that length has also changed. Do it before updating metadata
+				// to ensure that iterating over the array as a result of a metadata update
+				// will not cause the length to be out of sync.
+				if (is_proxied_array && typeof prop === 'string') {
+					var ls = /** @type {Source<number>} */ (sources.get('length'));
+					var n = Number(prop);
+
+					if (Number.isInteger(n) && n >= ls.v) {
+						set(ls, n + 1);
+					}
+				}
+
+				update_version(version);
+			}
+
+			return true;
+		},
+
+		ownKeys(target) {
+			get(version);
+
+			var own_keys = Reflect.ownKeys(target).filter((key) => {
+				var source = sources.get(key);
+				return source === undefined || source.v !== UNINITIALIZED;
+			});
+
+			for (var [key, source] of sources) {
+				if (source.v !== UNINITIALIZED && !(key in target)) {
+					own_keys.push(key);
+				}
+			}
+
+			return own_keys;
+		},
+
+		setPrototypeOf() {
+			state_prototype_fixed();
+		}
+	});
+}
+
+/**
+ * @param {Source<number>} signal
+ * @param {1 | -1} [d]
+ */
+function update_version(signal, d = 1) {
+	set(signal, signal.v + d);
+}
+
+/** @import { Derived, Effect } from '#client' */
+
+/**
+ * @template V
+ * @param {() => V} fn
+ * @returns {Derived<V>}
+ */
+/*#__NO_SIDE_EFFECTS__*/
+function derived(fn) {
+	var flags = DERIVED | DIRTY;
+	var parent_derived =
+		active_reaction !== null && (active_reaction.f & DERIVED) !== 0
+			? /** @type {Derived} */ (active_reaction)
+			: null;
+
+	if (active_effect === null || (parent_derived !== null && (parent_derived.f & UNOWNED) !== 0)) {
+		flags |= UNOWNED;
+	} else {
+		// Since deriveds are evaluated lazily, any effects created inside them are
+		// created too late to ensure that the parent effect is added to the tree
+		active_effect.f |= EFFECT_HAS_DERIVED;
+	}
+
+	/** @type {Derived<V>} */
+	const signal = {
+		ctx: component_context,
+		deps: null,
+		effects: null,
+		equals,
+		f: flags,
+		fn,
+		reactions: null,
+		rv: 0,
+		v: /** @type {V} */ (null),
+		wv: 0,
+		parent: parent_derived ?? active_effect
+	};
+
+	return signal;
+}
+
+/**
+ * @template V
+ * @param {() => V} fn
+ * @returns {Derived<V>}
+ */
+/*#__NO_SIDE_EFFECTS__*/
+function user_derived(fn) {
+	const d = derived(fn);
+
+	push_reaction_value(d);
+
+	return d;
+}
+
+/**
+ * @template V
+ * @param {() => V} fn
+ * @returns {Derived<V>}
+ */
+/*#__NO_SIDE_EFFECTS__*/
+function derived_safe_equal(fn) {
+	const signal = derived(fn);
+	signal.equals = safe_equals;
+	return signal;
+}
+
+/**
+ * @param {Derived} derived
+ * @returns {void}
+ */
+function destroy_derived_effects(derived) {
+	var effects = derived.effects;
+
+	if (effects !== null) {
+		derived.effects = null;
+
+		for (var i = 0; i < effects.length; i += 1) {
+			destroy_effect(/** @type {Effect} */ (effects[i]));
+		}
+	}
+}
+
+/**
+ * @param {Derived} derived
+ * @returns {Effect | null}
+ */
+function get_derived_parent_effect(derived) {
+	var parent = derived.parent;
+	while (parent !== null) {
+		if ((parent.f & DERIVED) === 0) {
+			return /** @type {Effect} */ (parent);
+		}
+		parent = parent.parent;
+	}
+	return null;
+}
+
+/**
+ * @template T
+ * @param {Derived} derived
+ * @returns {T}
+ */
+function execute_derived(derived) {
+	var value;
+	var prev_active_effect = active_effect;
+
+	set_active_effect(get_derived_parent_effect(derived));
+
+	{
+		try {
+			destroy_derived_effects(derived);
+			value = update_reaction(derived);
+		} finally {
+			set_active_effect(prev_active_effect);
+		}
+	}
+
+	return value;
+}
+
+/**
+ * @param {Derived} derived
+ * @returns {void}
+ */
+function update_derived(derived) {
+	var value = execute_derived(derived);
+
+	if (!derived.equals(value)) {
+		derived.v = value;
+		derived.wv = increment_write_version();
+	}
+
+	// don't mark derived clean if we're reading it inside a
+	// cleanup function, or it will cache a stale value
+	if (is_destroying_effect) return;
+
+	var status =
+		(skip_reaction || (derived.f & UNOWNED) !== 0) && derived.deps !== null ? MAYBE_DIRTY : CLEAN;
+
+	set_signal_status(derived, status);
+}
+
+/** @import { Derived, Effect, Source, Value } from '#client' */
+const old_values = new Map();
+
+/**
+ * @template V
+ * @param {V} v
+ * @param {Error | null} [stack]
+ * @returns {Source<V>}
+ */
+// TODO rename this to `state` throughout the codebase
+function source(v, stack) {
+	/** @type {Value} */
+	var signal = {
+		f: 0, // TODO ideally we could skip this altogether, but it causes type errors
+		v,
+		reactions: null,
+		equals,
+		rv: 0,
+		wv: 0
+	};
+
+	return signal;
+}
+
+/**
+ * @template V
+ * @param {V} v
+ * @param {Error | null} [stack]
+ */
+/*#__NO_SIDE_EFFECTS__*/
+function state(v, stack) {
+	const s = source(v);
+
+	push_reaction_value(s);
+
+	return s;
+}
+
+/**
+ * @template V
+ * @param {V} initial_value
+ * @param {boolean} [immutable]
+ * @returns {Source<V>}
+ */
+/*#__NO_SIDE_EFFECTS__*/
+function mutable_source(initial_value, immutable = false) {
+	const s = source(initial_value);
+	if (!immutable) {
+		s.equals = safe_equals;
+	}
+
+	return s;
+}
+
+/**
+ * @template V
+ * @param {Source<V>} source
+ * @param {V} value
+ * @param {boolean} [should_proxy]
+ * @returns {V}
+ */
+function set(source, value, should_proxy = false) {
+	if (
+		active_reaction !== null &&
+		!untracking &&
+		is_runes() &&
+		(active_reaction.f & (DERIVED | BLOCK_EFFECT)) !== 0 &&
+		!reaction_sources?.includes(source)
+	) {
+		state_unsafe_mutation();
+	}
+
+	let new_value = should_proxy ? proxy(value) : value;
+
+	return internal_set(source, new_value);
+}
+
+/**
+ * @template V
+ * @param {Source<V>} source
+ * @param {V} value
+ * @returns {V}
+ */
+function internal_set(source, value) {
+	if (!source.equals(value)) {
+		var old_value = source.v;
+
+		if (is_destroying_effect) {
+			old_values.set(source, value);
+		} else {
+			old_values.set(source, old_value);
+		}
+
+		source.v = value;
+
+		if ((source.f & DERIVED) !== 0) {
+			// if we are assigning to a dirty derived we set it to clean/maybe dirty but we also eagerly execute it to track the dependencies
+			if ((source.f & DIRTY) !== 0) {
+				execute_derived(/** @type {Derived} */ (source));
+			}
+			set_signal_status(source, (source.f & UNOWNED) === 0 ? CLEAN : MAYBE_DIRTY);
+		}
+
+		source.wv = increment_write_version();
+
+		mark_reactions(source, DIRTY);
+
+		// It's possible that the current reaction might not have up-to-date dependencies
+		// whilst it's actively running. So in the case of ensuring it registers the reaction
+		// properly for itself, we need to ensure the current effect actually gets
+		// scheduled. i.e: `$effect(() => x++)`
+		if (
+			active_effect !== null &&
+			(active_effect.f & CLEAN) !== 0 &&
+			(active_effect.f & (BRANCH_EFFECT | ROOT_EFFECT)) === 0
+		) {
+			if (untracked_writes === null) {
+				set_untracked_writes([source]);
+			} else {
+				untracked_writes.push(source);
+			}
+		}
+	}
+
+	return value;
+}
+
+/**
+ * @param {Value} signal
+ * @param {number} status should be DIRTY or MAYBE_DIRTY
+ * @returns {void}
+ */
+function mark_reactions(signal, status) {
+	var reactions = signal.reactions;
+	if (reactions === null) return;
+	var length = reactions.length;
+
+	for (var i = 0; i < length; i++) {
+		var reaction = reactions[i];
+		var flags = reaction.f;
+
+		// Skip any effects that are already dirty
+		if ((flags & DIRTY) !== 0) continue;
+
+		set_signal_status(reaction, status);
+
+		// If the signal a) was previously clean or b) is an unowned derived, then mark it
+		if ((flags & (CLEAN | UNOWNED)) !== 0) {
+			if ((flags & DERIVED) !== 0) {
+				mark_reactions(/** @type {Derived} */ (reaction), MAYBE_DIRTY);
+			} else {
+				schedule_effect(/** @type {Effect} */ (reaction));
+			}
+		}
+	}
+}
+
+/** @import { TemplateNode } from '#client' */
+
+
+/**
+ * Use this variable to guard everything related to hydration code so it can be treeshaken out
+ * if the user doesn't use the `hydrate` method and these code paths are therefore not needed.
+ */
+let hydrating = false;
+
+/** @import { TemplateNode } from '#client' */
+
+// export these for reference in the compiled code, making global name deduplication unnecessary
+/** @type {Window} */
+var $window;
+
+/** @type {boolean} */
+var is_firefox;
+
+/** @type {() => Node | null} */
+var first_child_getter;
+/** @type {() => Node | null} */
+var next_sibling_getter;
+
+/**
+ * Initialize these lazily to avoid issues when using the runtime in a server context
+ * where these globals are not available while avoiding a separate server entry point
+ */
+function init_operations() {
+	if ($window !== undefined) {
+		return;
+	}
+
+	$window = window;
+	is_firefox = /Firefox/.test(navigator.userAgent);
+
+	var element_prototype = Element.prototype;
+	var node_prototype = Node.prototype;
+	var text_prototype = Text.prototype;
+
+	// @ts-ignore
+	first_child_getter = get_descriptor(node_prototype, 'firstChild').get;
+	// @ts-ignore
+	next_sibling_getter = get_descriptor(node_prototype, 'nextSibling').get;
+
+	if (is_extensible(element_prototype)) {
+		// the following assignments improve perf of lookups on DOM nodes
+		// @ts-expect-error
+		element_prototype.__click = undefined;
+		// @ts-expect-error
+		element_prototype.__className = undefined;
+		// @ts-expect-error
+		element_prototype.__attributes = null;
+		// @ts-expect-error
+		element_prototype.__style = undefined;
+		// @ts-expect-error
+		element_prototype.__e = undefined;
+	}
+
+	if (is_extensible(text_prototype)) {
+		// @ts-expect-error
+		text_prototype.__t = undefined;
+	}
+}
+
+/**
+ * @param {string} value
+ * @returns {Text}
+ */
+function create_text(value = '') {
+	return document.createTextNode(value);
+}
+
+/**
+ * @template {Node} N
+ * @param {N} node
+ * @returns {Node | null}
+ */
+/*@__NO_SIDE_EFFECTS__*/
+function get_first_child(node) {
+	return first_child_getter.call(node);
+}
+
+/**
+ * @template {Node} N
+ * @param {N} node
+ * @returns {Node | null}
+ */
+/*@__NO_SIDE_EFFECTS__*/
+function get_next_sibling(node) {
+	return next_sibling_getter.call(node);
+}
+
+/**
+ * Don't mark this as side-effect-free, hydration needs to walk all nodes
+ * @template {Node} N
+ * @param {N} node
+ * @param {boolean} is_text
+ * @returns {Node | null}
+ */
+function child(node, is_text) {
+	{
+		return get_first_child(node);
+	}
+}
+
+/**
+ * Don't mark this as side-effect-free, hydration needs to walk all nodes
+ * @param {DocumentFragment | TemplateNode[]} fragment
+ * @param {boolean} is_text
+ * @returns {Node | null}
+ */
+function first_child(fragment, is_text) {
+	{
+		// when not hydrating, `fragment` is a `DocumentFragment` (the result of calling `open_frag`)
+		var first = /** @type {DocumentFragment} */ (get_first_child(/** @type {Node} */ (fragment)));
+
+		// TODO prevent user comments with the empty string when preserveComments is true
+		if (first instanceof Comment && first.data === '') return get_next_sibling(first);
+
+		return first;
+	}
+}
+
+/**
+ * Don't mark this as side-effect-free, hydration needs to walk all nodes
+ * @param {TemplateNode} node
+ * @param {number} count
+ * @param {boolean} is_text
+ * @returns {Node | null}
+ */
+function sibling(node, count = 1, is_text = false) {
+	let next_sibling = node;
+
+	while (count--) {
+		next_sibling = /** @type {TemplateNode} */ (get_next_sibling(next_sibling));
+	}
+
+	{
+		return next_sibling;
+	}
+}
+
+/**
+ * @template {Node} N
+ * @param {N} node
+ * @returns {void}
+ */
+function clear_text_content(node) {
+	node.textContent = '';
+}
+
+/** @import { ComponentContext, ComponentContextLegacy, Derived, Effect, TemplateNode, TransitionManager } from '#client' */
+
+/**
+ * @param {'$effect' | '$effect.pre' | '$inspect'} rune
+ */
+function validate_effect(rune) {
+	if (active_effect === null && active_reaction === null) {
+		effect_orphan();
+	}
+
+	if (active_reaction !== null && (active_reaction.f & UNOWNED) !== 0 && active_effect === null) {
+		effect_in_unowned_derived();
+	}
+
+	if (is_destroying_effect) {
+		effect_in_teardown();
+	}
+}
+
+/**
+ * @param {Effect} effect
+ * @param {Effect} parent_effect
+ */
+function push_effect(effect, parent_effect) {
+	var parent_last = parent_effect.last;
+	if (parent_last === null) {
+		parent_effect.last = parent_effect.first = effect;
+	} else {
+		parent_last.next = effect;
+		effect.prev = parent_last;
+		parent_effect.last = effect;
+	}
+}
+
+/**
+ * @param {number} type
+ * @param {null | (() => void | (() => void))} fn
+ * @param {boolean} sync
+ * @param {boolean} push
+ * @returns {Effect}
+ */
+function create_effect(type, fn, sync, push = true) {
+	var parent = active_effect;
+
+	/** @type {Effect} */
+	var effect = {
+		ctx: component_context,
+		deps: null,
+		nodes_start: null,
+		nodes_end: null,
+		f: type | DIRTY,
+		first: null,
+		fn,
+		last: null,
+		next: null,
+		parent,
+		prev: null,
+		teardown: null,
+		transitions: null,
+		wv: 0
+	};
+
+	if (sync) {
+		try {
+			update_effect(effect);
+			effect.f |= EFFECT_RAN;
+		} catch (e) {
+			destroy_effect(effect);
+			throw e;
+		}
+	} else if (fn !== null) {
+		schedule_effect(effect);
+	}
+
+	// if an effect has no dependencies, no DOM and no teardown function,
+	// don't bother adding it to the effect tree
+	var inert =
+		sync &&
+		effect.deps === null &&
+		effect.first === null &&
+		effect.nodes_start === null &&
+		effect.teardown === null &&
+		(effect.f & (EFFECT_HAS_DERIVED | BOUNDARY_EFFECT)) === 0;
+
+	if (!inert && push) {
+		if (parent !== null) {
+			push_effect(effect, parent);
+		}
+
+		// if we're in a derived, add the effect there too
+		if (active_reaction !== null && (active_reaction.f & DERIVED) !== 0) {
+			var derived = /** @type {Derived} */ (active_reaction);
+			(derived.effects ??= []).push(effect);
+		}
+	}
+
+	return effect;
+}
+
+/**
+ * @param {() => void} fn
+ */
+function teardown(fn) {
+	const effect = create_effect(RENDER_EFFECT, null, false);
+	set_signal_status(effect, CLEAN);
+	effect.teardown = fn;
+	return effect;
+}
+
+/**
+ * Internal representation of `$effect(...)`
+ * @param {() => void | (() => void)} fn
+ */
+function user_effect(fn) {
+	validate_effect();
+
+	// Non-nested `$effect(...)` in a component should be deferred
+	// until the component is mounted
+	var defer =
+		active_effect !== null &&
+		(active_effect.f & BRANCH_EFFECT) !== 0 &&
+		component_context !== null &&
+		!component_context.m;
+
+	if (defer) {
+		var context = /** @type {ComponentContext} */ (component_context);
+		(context.e ??= []).push({
+			fn,
+			effect: active_effect,
+			reaction: active_reaction
+		});
+	} else {
+		var signal = effect(fn);
+		return signal;
+	}
+}
+
+/**
+ * An effect root whose children can transition out
+ * @param {() => void} fn
+ * @returns {(options?: { outro?: boolean }) => Promise<void>}
+ */
+function component_root(fn) {
+	const effect = create_effect(ROOT_EFFECT, fn, true);
+
+	return (options = {}) => {
+		return new Promise((fulfil) => {
+			if (options.outro) {
+				pause_effect(effect, () => {
+					destroy_effect(effect);
+					fulfil(undefined);
+				});
+			} else {
+				destroy_effect(effect);
+				fulfil(undefined);
+			}
+		});
+	};
+}
+
+/**
+ * @param {() => void | (() => void)} fn
+ * @returns {Effect}
+ */
+function effect(fn) {
+	return create_effect(EFFECT, fn, false);
+}
+
+/**
+ * @param {() => void | (() => void)} fn
+ * @returns {Effect}
+ */
+function render_effect(fn) {
+	return create_effect(RENDER_EFFECT, fn, true);
+}
+
+/**
+ * @param {(...expressions: any) => void | (() => void)} fn
+ * @param {Array<() => any>} thunks
+ * @returns {Effect}
+ */
+function template_effect(fn, thunks = [], d = derived) {
+	const deriveds = thunks.map(d);
+	const effect = () => fn(...deriveds.map(get));
+
+	return block(effect);
+}
+
+/**
+ * @param {(() => void)} fn
+ * @param {number} flags
+ */
+function block(fn, flags = 0) {
+	return create_effect(RENDER_EFFECT | BLOCK_EFFECT | flags, fn, true);
+}
+
+/**
+ * @param {(() => void)} fn
+ * @param {boolean} [push]
+ */
+function branch(fn, push = true) {
+	return create_effect(RENDER_EFFECT | BRANCH_EFFECT, fn, true, push);
+}
+
+/**
+ * @param {Effect} effect
+ */
+function execute_effect_teardown(effect) {
+	var teardown = effect.teardown;
+	if (teardown !== null) {
+		const previously_destroying_effect = is_destroying_effect;
+		const previous_reaction = active_reaction;
+		set_is_destroying_effect(true);
+		set_active_reaction(null);
+		try {
+			teardown.call(null);
+		} finally {
+			set_is_destroying_effect(previously_destroying_effect);
+			set_active_reaction(previous_reaction);
+		}
+	}
+}
+
+/**
+ * @param {Effect} signal
+ * @param {boolean} remove_dom
+ * @returns {void}
+ */
+function destroy_effect_children(signal, remove_dom = false) {
+	var effect = signal.first;
+	signal.first = signal.last = null;
+
+	while (effect !== null) {
+		var next = effect.next;
+
+		if ((effect.f & ROOT_EFFECT) !== 0) {
+			// this is now an independent root
+			effect.parent = null;
+		} else {
+			destroy_effect(effect, remove_dom);
+		}
+
+		effect = next;
+	}
+}
+
+/**
+ * @param {Effect} signal
+ * @returns {void}
+ */
+function destroy_block_effect_children(signal) {
+	var effect = signal.first;
+
+	while (effect !== null) {
+		var next = effect.next;
+		if ((effect.f & BRANCH_EFFECT) === 0) {
+			destroy_effect(effect);
+		}
+		effect = next;
+	}
+}
+
+/**
+ * @param {Effect} effect
+ * @param {boolean} [remove_dom]
+ * @returns {void}
+ */
+function destroy_effect(effect, remove_dom = true) {
+	var removed = false;
+
+	if ((remove_dom || (effect.f & HEAD_EFFECT) !== 0) && effect.nodes_start !== null) {
+		remove_effect_dom(effect.nodes_start, /** @type {TemplateNode} */ (effect.nodes_end));
+		removed = true;
+	}
+
+	destroy_effect_children(effect, remove_dom && !removed);
+	remove_reactions(effect, 0);
+	set_signal_status(effect, DESTROYED);
+
+	var transitions = effect.transitions;
+
+	if (transitions !== null) {
+		for (const transition of transitions) {
+			transition.stop();
+		}
+	}
+
+	execute_effect_teardown(effect);
+
+	var parent = effect.parent;
+
+	// If the parent doesn't have any children, then skip this work altogether
+	if (parent !== null && parent.first !== null) {
+		unlink_effect(effect);
+	}
+
+	// `first` and `child` are nulled out in destroy_effect_children
+	// we don't null out `parent` so that error propagation can work correctly
+	effect.next =
+		effect.prev =
+		effect.teardown =
+		effect.ctx =
+		effect.deps =
+		effect.fn =
+		effect.nodes_start =
+		effect.nodes_end =
+			null;
+}
+
+/**
  *
- * `onMount` does not run inside a [server-side component](/docs#run-time-server-side-component-api).
+ * @param {TemplateNode | null} node
+ * @param {TemplateNode} end
+ */
+function remove_effect_dom(node, end) {
+	while (node !== null) {
+		/** @type {TemplateNode | null} */
+		var next = node === end ? null : /** @type {TemplateNode} */ (get_next_sibling(node));
+
+		node.remove();
+		node = next;
+	}
+}
+
+/**
+ * Detach an effect from the effect tree, freeing up memory and
+ * reducing the amount of work that happens on subsequent traversals
+ * @param {Effect} effect
+ */
+function unlink_effect(effect) {
+	var parent = effect.parent;
+	var prev = effect.prev;
+	var next = effect.next;
+
+	if (prev !== null) prev.next = next;
+	if (next !== null) next.prev = prev;
+
+	if (parent !== null) {
+		if (parent.first === effect) parent.first = next;
+		if (parent.last === effect) parent.last = prev;
+	}
+}
+
+/**
+ * When a block effect is removed, we don't immediately destroy it or yank it
+ * out of the DOM, because it might have transitions. Instead, we 'pause' it.
+ * It stays around (in memory, and in the DOM) until outro transitions have
+ * completed, and if the state change is reversed then we _resume_ it.
+ * A paused effect does not update, and the DOM subtree becomes inert.
+ * @param {Effect} effect
+ * @param {() => void} [callback]
+ */
+function pause_effect(effect, callback) {
+	/** @type {TransitionManager[]} */
+	var transitions = [];
+
+	pause_children(effect, transitions, true);
+
+	run_out_transitions(transitions, () => {
+		destroy_effect(effect);
+		if (callback) callback();
+	});
+}
+
+/**
+ * @param {TransitionManager[]} transitions
+ * @param {() => void} fn
+ */
+function run_out_transitions(transitions, fn) {
+	var remaining = transitions.length;
+	if (remaining > 0) {
+		var check = () => --remaining || fn();
+		for (var transition of transitions) {
+			transition.out(check);
+		}
+	} else {
+		fn();
+	}
+}
+
+/**
+ * @param {Effect} effect
+ * @param {TransitionManager[]} transitions
+ * @param {boolean} local
+ */
+function pause_children(effect, transitions, local) {
+	if ((effect.f & INERT) !== 0) return;
+	effect.f ^= INERT;
+
+	if (effect.transitions !== null) {
+		for (const transition of effect.transitions) {
+			if (transition.is_global || local) {
+				transitions.push(transition);
+			}
+		}
+	}
+
+	var child = effect.first;
+
+	while (child !== null) {
+		var sibling = child.next;
+		var transparent = (child.f & EFFECT_TRANSPARENT) !== 0 || (child.f & BRANCH_EFFECT) !== 0;
+		// TODO we don't need to call pause_children recursively with a linked list in place
+		// it's slightly more involved though as we have to account for `transparent` changing
+		// through the tree.
+		pause_children(child, transitions, transparent ? local : false);
+		child = sibling;
+	}
+}
+
+/**
+ * The opposite of `pause_effect`. We call this if (for example)
+ * `x` becomes falsy then truthy: `{#if x}...{/if}`
+ * @param {Effect} effect
+ */
+function resume_effect(effect) {
+	resume_children(effect, true);
+}
+
+/**
+ * @param {Effect} effect
+ * @param {boolean} local
+ */
+function resume_children(effect, local) {
+	if ((effect.f & INERT) === 0) return;
+	effect.f ^= INERT;
+
+	// Ensure the effect is marked as clean again so that any dirty child
+	// effects can schedule themselves for execution
+	if ((effect.f & CLEAN) === 0) {
+		effect.f ^= CLEAN;
+	}
+
+	// If a dependency of this effect changed while it was paused,
+	// schedule the effect to update
+	if (check_dirtiness(effect)) {
+		set_signal_status(effect, DIRTY);
+		schedule_effect(effect);
+	}
+
+	var child = effect.first;
+
+	while (child !== null) {
+		var sibling = child.next;
+		var transparent = (child.f & EFFECT_TRANSPARENT) !== 0 || (child.f & BRANCH_EFFECT) !== 0;
+		// TODO we don't need to call resume_children recursively with a linked list in place
+		// it's slightly more involved though as we have to account for `transparent` changing
+		// through the tree.
+		resume_children(child, transparent ? local : false);
+		child = sibling;
+	}
+
+	if (effect.transitions !== null) {
+		for (const transition of effect.transitions) {
+			if (transition.is_global || local) {
+				transition.in();
+			}
+		}
+	}
+}
+
+/** @type {Array<() => void>} */
+let micro_tasks = [];
+
+/** @type {Array<() => void>} */
+let idle_tasks = [];
+
+function run_micro_tasks() {
+	var tasks = micro_tasks;
+	micro_tasks = [];
+	run_all(tasks);
+}
+
+function run_idle_tasks() {
+	var tasks = idle_tasks;
+	idle_tasks = [];
+	run_all(tasks);
+}
+
+/**
+ * @param {() => void} fn
+ */
+function queue_micro_task(fn) {
+	if (micro_tasks.length === 0) {
+		queueMicrotask(run_micro_tasks);
+	}
+
+	micro_tasks.push(fn);
+}
+
+/**
+ * Synchronously run any queued tasks.
+ */
+function flush_tasks() {
+	if (micro_tasks.length > 0) {
+		run_micro_tasks();
+	}
+
+	if (idle_tasks.length > 0) {
+		run_idle_tasks();
+	}
+}
+
+/** @import { ComponentContext, Derived, Effect, Reaction, Signal, Source, Value } from '#client' */
+let is_throwing_error = false;
+
+let is_flushing = false;
+
+/** @type {Effect | null} */
+let last_scheduled_effect = null;
+
+let is_updating_effect = false;
+
+let is_destroying_effect = false;
+
+/** @param {boolean} value */
+function set_is_destroying_effect(value) {
+	is_destroying_effect = value;
+}
+
+// Handle effect queues
+
+/** @type {Effect[]} */
+let queued_root_effects = [];
+
+/** @type {Effect[]} Stack of effects, dev only */
+let dev_effect_stack = [];
+// Handle signal reactivity tree dependencies and reactions
+
+/** @type {null | Reaction} */
+let active_reaction = null;
+
+let untracking = false;
+
+/** @param {null | Reaction} reaction */
+function set_active_reaction(reaction) {
+	active_reaction = reaction;
+}
+
+/** @type {null | Effect} */
+let active_effect = null;
+
+/** @param {null | Effect} effect */
+function set_active_effect(effect) {
+	active_effect = effect;
+}
+
+/**
+ * When sources are created within a reaction, reading and writing
+ * them should not cause a re-run
+ * @type {null | Source[]}
+ */
+let reaction_sources = null;
+
+/** @param {Value} value */
+function push_reaction_value(value) {
+	if (active_reaction !== null && active_reaction.f & EFFECT_IS_UPDATING) {
+		if (reaction_sources === null) {
+			reaction_sources = [value];
+		} else {
+			reaction_sources.push(value);
+		}
+	}
+}
+
+/**
+ * The dependencies of the reaction that is currently being executed. In many cases,
+ * the dependencies are unchanged between runs, and so this will be `null` unless
+ * and until a new dependency is accessed — we track this via `skipped_deps`
+ * @type {null | Value[]}
+ */
+let new_deps = null;
+
+let skipped_deps = 0;
+
+/**
+ * Tracks writes that the effect it's executed in doesn't listen to yet,
+ * so that the dependency can be added to the effect later on if it then reads it
+ * @type {null | Source[]}
+ */
+let untracked_writes = null;
+
+/** @param {null | Source[]} value */
+function set_untracked_writes(value) {
+	untracked_writes = value;
+}
+
+/**
+ * @type {number} Used by sources and deriveds for handling updates.
+ * Version starts from 1 so that unowned deriveds differentiate between a created effect and a run one for tracing
+ **/
+let write_version = 1;
+
+/** @type {number} Used to version each read of a source of derived to avoid duplicating depedencies inside a reaction */
+let read_version = 0;
+
+// If we are working with a get() chain that has no active container,
+// to prevent memory leaks, we skip adding the reaction.
+let skip_reaction = false;
+
+function increment_write_version() {
+	return ++write_version;
+}
+
+/**
+ * Determines whether a derived or effect is dirty.
+ * If it is MAYBE_DIRTY, will set the status to CLEAN
+ * @param {Reaction} reaction
+ * @returns {boolean}
+ */
+function check_dirtiness(reaction) {
+	var flags = reaction.f;
+
+	if ((flags & DIRTY) !== 0) {
+		return true;
+	}
+
+	if ((flags & MAYBE_DIRTY) !== 0) {
+		var dependencies = reaction.deps;
+		var is_unowned = (flags & UNOWNED) !== 0;
+
+		if (dependencies !== null) {
+			var i;
+			var dependency;
+			var is_disconnected = (flags & DISCONNECTED) !== 0;
+			var is_unowned_connected = is_unowned && active_effect !== null && !skip_reaction;
+			var length = dependencies.length;
+
+			// If we are working with a disconnected or an unowned signal that is now connected (due to an active effect)
+			// then we need to re-connect the reaction to the dependency
+			if (is_disconnected || is_unowned_connected) {
+				var derived = /** @type {Derived} */ (reaction);
+				var parent = derived.parent;
+
+				for (i = 0; i < length; i++) {
+					dependency = dependencies[i];
+
+					// We always re-add all reactions (even duplicates) if the derived was
+					// previously disconnected, however we don't if it was unowned as we
+					// de-duplicate dependencies in that case
+					if (is_disconnected || !dependency?.reactions?.includes(derived)) {
+						(dependency.reactions ??= []).push(derived);
+					}
+				}
+
+				if (is_disconnected) {
+					derived.f ^= DISCONNECTED;
+				}
+				// If the unowned derived is now fully connected to the graph again (it's unowned and reconnected, has a parent
+				// and the parent is not unowned), then we can mark it as connected again, removing the need for the unowned
+				// flag
+				if (is_unowned_connected && parent !== null && (parent.f & UNOWNED) === 0) {
+					derived.f ^= UNOWNED;
+				}
+			}
+
+			for (i = 0; i < length; i++) {
+				dependency = dependencies[i];
+
+				if (check_dirtiness(/** @type {Derived} */ (dependency))) {
+					update_derived(/** @type {Derived} */ (dependency));
+				}
+
+				if (dependency.wv > reaction.wv) {
+					return true;
+				}
+			}
+		}
+
+		// Unowned signals should never be marked as clean unless they
+		// are used within an active_effect without skip_reaction
+		if (!is_unowned || (active_effect !== null && !skip_reaction)) {
+			set_signal_status(reaction, CLEAN);
+		}
+	}
+
+	return false;
+}
+
+/**
+ * @param {unknown} error
+ * @param {Effect} effect
+ */
+function propagate_error(error, effect) {
+	/** @type {Effect | null} */
+	var current = effect;
+
+	while (current !== null) {
+		if ((current.f & BOUNDARY_EFFECT) !== 0) {
+			try {
+				// @ts-expect-error
+				current.fn(error);
+				return;
+			} catch {
+				// Remove boundary flag from effect
+				current.f ^= BOUNDARY_EFFECT;
+			}
+		}
+
+		current = current.parent;
+	}
+
+	is_throwing_error = false;
+	throw error;
+}
+
+/**
+ * @param {Effect} effect
+ */
+function should_rethrow_error(effect) {
+	return (
+		(effect.f & DESTROYED) === 0 &&
+		(effect.parent === null || (effect.parent.f & BOUNDARY_EFFECT) === 0)
+	);
+}
+
+/**
+ * @param {unknown} error
+ * @param {Effect} effect
+ * @param {Effect | null} previous_effect
+ * @param {ComponentContext | null} component_context
+ */
+function handle_error(error, effect, previous_effect, component_context) {
+	if (is_throwing_error) {
+		if (previous_effect === null) {
+			is_throwing_error = false;
+		}
+
+		if (should_rethrow_error(effect)) {
+			throw error;
+		}
+
+		return;
+	}
+
+	if (previous_effect !== null) {
+		is_throwing_error = true;
+	}
+
+	propagate_error(error, effect);
+
+	if (should_rethrow_error(effect)) {
+		throw error;
+	}
+}
+
+/**
+ * @param {Value} signal
+ * @param {Effect} effect
+ * @param {boolean} [root]
+ */
+function schedule_possible_effect_self_invalidation(signal, effect, root = true) {
+	var reactions = signal.reactions;
+	if (reactions === null) return;
+
+	for (var i = 0; i < reactions.length; i++) {
+		var reaction = reactions[i];
+
+		if (reaction_sources?.includes(signal)) continue;
+
+		if ((reaction.f & DERIVED) !== 0) {
+			schedule_possible_effect_self_invalidation(/** @type {Derived} */ (reaction), effect, false);
+		} else if (effect === reaction) {
+			if (root) {
+				set_signal_status(reaction, DIRTY);
+			} else if ((reaction.f & CLEAN) !== 0) {
+				set_signal_status(reaction, MAYBE_DIRTY);
+			}
+			schedule_effect(/** @type {Effect} */ (reaction));
+		}
+	}
+}
+
+/**
+ * @template V
+ * @param {Reaction} reaction
+ * @returns {V}
+ */
+function update_reaction(reaction) {
+	var previous_deps = new_deps;
+	var previous_skipped_deps = skipped_deps;
+	var previous_untracked_writes = untracked_writes;
+	var previous_reaction = active_reaction;
+	var previous_skip_reaction = skip_reaction;
+	var previous_reaction_sources = reaction_sources;
+	var previous_component_context = component_context;
+	var previous_untracking = untracking;
+
+	var flags = reaction.f;
+
+	new_deps = /** @type {null | Value[]} */ (null);
+	skipped_deps = 0;
+	untracked_writes = null;
+	skip_reaction =
+		(flags & UNOWNED) !== 0 && (untracking || !is_updating_effect || active_reaction === null);
+	active_reaction = (flags & (BRANCH_EFFECT | ROOT_EFFECT)) === 0 ? reaction : null;
+
+	reaction_sources = null;
+	set_component_context(reaction.ctx);
+	untracking = false;
+	read_version++;
+
+	reaction.f |= EFFECT_IS_UPDATING;
+
+	try {
+		var result = /** @type {Function} */ (0, reaction.fn)();
+		var deps = reaction.deps;
+
+		if (new_deps !== null) {
+			var i;
+
+			remove_reactions(reaction, skipped_deps);
+
+			if (deps !== null && skipped_deps > 0) {
+				deps.length = skipped_deps + new_deps.length;
+				for (i = 0; i < new_deps.length; i++) {
+					deps[skipped_deps + i] = new_deps[i];
+				}
+			} else {
+				reaction.deps = deps = new_deps;
+			}
+
+			if (!skip_reaction) {
+				for (i = skipped_deps; i < deps.length; i++) {
+					(deps[i].reactions ??= []).push(reaction);
+				}
+			}
+		} else if (deps !== null && skipped_deps < deps.length) {
+			remove_reactions(reaction, skipped_deps);
+			deps.length = skipped_deps;
+		}
+
+		// If we're inside an effect and we have untracked writes, then we need to
+		// ensure that if any of those untracked writes result in re-invalidation
+		// of the current effect, then that happens accordingly
+		if (
+			is_runes() &&
+			untracked_writes !== null &&
+			!untracking &&
+			deps !== null &&
+			(reaction.f & (DERIVED | MAYBE_DIRTY | DIRTY)) === 0
+		) {
+			for (i = 0; i < /** @type {Source[]} */ (untracked_writes).length; i++) {
+				schedule_possible_effect_self_invalidation(
+					untracked_writes[i],
+					/** @type {Effect} */ (reaction)
+				);
+			}
+		}
+
+		// If we are returning to an previous reaction then
+		// we need to increment the read version to ensure that
+		// any dependencies in this reaction aren't marked with
+		// the same version
+		if (previous_reaction !== null && previous_reaction !== reaction) {
+			read_version++;
+
+			if (untracked_writes !== null) {
+				if (previous_untracked_writes === null) {
+					previous_untracked_writes = untracked_writes;
+				} else {
+					previous_untracked_writes.push(.../** @type {Source[]} */ (untracked_writes));
+				}
+			}
+		}
+
+		return result;
+	} finally {
+		new_deps = previous_deps;
+		skipped_deps = previous_skipped_deps;
+		untracked_writes = previous_untracked_writes;
+		active_reaction = previous_reaction;
+		skip_reaction = previous_skip_reaction;
+		reaction_sources = previous_reaction_sources;
+		set_component_context(previous_component_context);
+		untracking = previous_untracking;
+
+		reaction.f ^= EFFECT_IS_UPDATING;
+	}
+}
+
+/**
+ * @template V
+ * @param {Reaction} signal
+ * @param {Value<V>} dependency
+ * @returns {void}
+ */
+function remove_reaction(signal, dependency) {
+	let reactions = dependency.reactions;
+	if (reactions !== null) {
+		var index = index_of.call(reactions, signal);
+		if (index !== -1) {
+			var new_length = reactions.length - 1;
+			if (new_length === 0) {
+				reactions = dependency.reactions = null;
+			} else {
+				// Swap with last element and then remove.
+				reactions[index] = reactions[new_length];
+				reactions.pop();
+			}
+		}
+	}
+	// If the derived has no reactions, then we can disconnect it from the graph,
+	// allowing it to either reconnect in the future, or be GC'd by the VM.
+	if (
+		reactions === null &&
+		(dependency.f & DERIVED) !== 0 &&
+		// Destroying a child effect while updating a parent effect can cause a dependency to appear
+		// to be unused, when in fact it is used by the currently-updating parent. Checking `new_deps`
+		// allows us to skip the expensive work of disconnecting and immediately reconnecting it
+		(new_deps === null || !new_deps.includes(dependency))
+	) {
+		set_signal_status(dependency, MAYBE_DIRTY);
+		// If we are working with a derived that is owned by an effect, then mark it as being
+		// disconnected.
+		if ((dependency.f & (UNOWNED | DISCONNECTED)) === 0) {
+			dependency.f ^= DISCONNECTED;
+		}
+		// Disconnect any reactions owned by this reaction
+		destroy_derived_effects(/** @type {Derived} **/ (dependency));
+		remove_reactions(/** @type {Derived} **/ (dependency), 0);
+	}
+}
+
+/**
+ * @param {Reaction} signal
+ * @param {number} start_index
+ * @returns {void}
+ */
+function remove_reactions(signal, start_index) {
+	var dependencies = signal.deps;
+	if (dependencies === null) return;
+
+	for (var i = start_index; i < dependencies.length; i++) {
+		remove_reaction(signal, dependencies[i]);
+	}
+}
+
+/**
+ * @param {Effect} effect
+ * @returns {void}
+ */
+function update_effect(effect) {
+	var flags = effect.f;
+
+	if ((flags & DESTROYED) !== 0) {
+		return;
+	}
+
+	set_signal_status(effect, CLEAN);
+
+	var previous_effect = active_effect;
+	var previous_component_context = component_context;
+	var was_updating_effect = is_updating_effect;
+
+	active_effect = effect;
+	is_updating_effect = true;
+
+	try {
+		if ((flags & BLOCK_EFFECT) !== 0) {
+			destroy_block_effect_children(effect);
+		} else {
+			destroy_effect_children(effect);
+		}
+
+		execute_effect_teardown(effect);
+		var teardown = update_reaction(effect);
+		effect.teardown = typeof teardown === 'function' ? teardown : null;
+		effect.wv = write_version;
+
+		var deps = effect.deps;
+
+		// In DEV, we need to handle a case where $inspect.trace() might
+		// incorrectly state a source dependency has not changed when it has.
+		// That's beacuse that source was changed by the same effect, causing
+		// the versions to match. We can avoid this by incrementing the version
+		var dep; if (DEV && tracing_mode_flag && (effect.f & DIRTY) !== 0 && deps !== null) ;
+
+		if (DEV) ;
+	} catch (error) {
+		handle_error(error, effect, previous_effect, previous_component_context || effect.ctx);
+	} finally {
+		is_updating_effect = was_updating_effect;
+		active_effect = previous_effect;
+	}
+}
+
+function infinite_loop_guard() {
+	try {
+		effect_update_depth_exceeded();
+	} catch (error) {
+		// Try and handle the error so it can be caught at a boundary, that's
+		// if there's an effect available from when it was last scheduled
+		if (last_scheduled_effect !== null) {
+			{
+				handle_error(error, last_scheduled_effect, null);
+			}
+		} else {
+			throw error;
+		}
+	}
+}
+
+function flush_queued_root_effects() {
+	var was_updating_effect = is_updating_effect;
+
+	try {
+		var flush_count = 0;
+		is_updating_effect = true;
+
+		while (queued_root_effects.length > 0) {
+			if (flush_count++ > 1000) {
+				infinite_loop_guard();
+			}
+
+			var root_effects = queued_root_effects;
+			var length = root_effects.length;
+
+			queued_root_effects = [];
+
+			for (var i = 0; i < length; i++) {
+				var collected_effects = process_effects(root_effects[i]);
+				flush_queued_effects(collected_effects);
+			}
+			old_values.clear();
+		}
+	} finally {
+		is_flushing = false;
+		is_updating_effect = was_updating_effect;
+
+		last_scheduled_effect = null;
+	}
+}
+
+/**
+ * @param {Array<Effect>} effects
+ * @returns {void}
+ */
+function flush_queued_effects(effects) {
+	var length = effects.length;
+	if (length === 0) return;
+
+	for (var i = 0; i < length; i++) {
+		var effect = effects[i];
+
+		if ((effect.f & (DESTROYED | INERT)) === 0) {
+			try {
+				if (check_dirtiness(effect)) {
+					update_effect(effect);
+
+					// Effects with no dependencies or teardown do not get added to the effect tree.
+					// Deferred effects (e.g. `$effect(...)`) _are_ added to the tree because we
+					// don't know if we need to keep them until they are executed. Doing the check
+					// here (rather than in `update_effect`) allows us to skip the work for
+					// immediate effects.
+					if (effect.deps === null && effect.first === null && effect.nodes_start === null) {
+						if (effect.teardown === null) {
+							// remove this effect from the graph
+							unlink_effect(effect);
+						} else {
+							// keep the effect in the graph, but free up some memory
+							effect.fn = null;
+						}
+					}
+				}
+			} catch (error) {
+				handle_error(error, effect, null, effect.ctx);
+			}
+		}
+	}
+}
+
+/**
+ * @param {Effect} signal
+ * @returns {void}
+ */
+function schedule_effect(signal) {
+	if (!is_flushing) {
+		is_flushing = true;
+		queueMicrotask(flush_queued_root_effects);
+	}
+
+	var effect = (last_scheduled_effect = signal);
+
+	while (effect.parent !== null) {
+		effect = effect.parent;
+		var flags = effect.f;
+
+		if ((flags & (ROOT_EFFECT | BRANCH_EFFECT)) !== 0) {
+			if ((flags & CLEAN) === 0) return;
+			effect.f ^= CLEAN;
+		}
+	}
+
+	queued_root_effects.push(effect);
+}
+
+/**
  *
- * https://svelte.dev/docs#run-time-svelte-onmount
+ * This function both runs render effects and collects user effects in topological order
+ * from the starting effect passed in. Effects will be collected when they match the filtered
+ * bitwise flag passed in only. The collected effects array will be populated with all the user
+ * effects to be flushed.
+ *
+ * @param {Effect} root
+ * @returns {Effect[]}
+ */
+function process_effects(root) {
+	/** @type {Effect[]} */
+	var effects = [];
+
+	/** @type {Effect | null} */
+	var effect = root;
+
+	while (effect !== null) {
+		var flags = effect.f;
+		var is_branch = (flags & (BRANCH_EFFECT | ROOT_EFFECT)) !== 0;
+		var is_skippable_branch = is_branch && (flags & CLEAN) !== 0;
+
+		if (!is_skippable_branch && (flags & INERT) === 0) {
+			if ((flags & EFFECT) !== 0) {
+				effects.push(effect);
+			} else if (is_branch) {
+				effect.f ^= CLEAN;
+			} else {
+				try {
+					if (check_dirtiness(effect)) {
+						update_effect(effect);
+					}
+				} catch (error) {
+					handle_error(error, effect, null, effect.ctx);
+				}
+			}
+
+			/** @type {Effect | null} */
+			var child = effect.first;
+
+			if (child !== null) {
+				effect = child;
+				continue;
+			}
+		}
+
+		var parent = effect.parent;
+		effect = effect.next;
+
+		while (effect === null && parent !== null) {
+			effect = parent.next;
+			parent = parent.parent;
+		}
+	}
+
+	return effects;
+}
+
+/**
+ * Synchronously flush any pending updates.
+ * Returns void if no callback is provided, otherwise returns the result of calling the callback.
+ * @template [T=void]
+ * @param {(() => T) | undefined} [fn]
+ * @returns {T}
+ */
+function flushSync(fn) {
+	var result;
+
+	while (true) {
+		flush_tasks();
+
+		if (queued_root_effects.length === 0) {
+			return /** @type {T} */ (result);
+		}
+
+		is_flushing = true;
+		flush_queued_root_effects();
+	}
+}
+
+/**
+ * Returns a promise that resolves once any pending state changes have been applied.
+ * @returns {Promise<void>}
+ */
+async function tick() {
+	await Promise.resolve();
+	// By calling flushSync we guarantee that any pending state changes are applied after one tick.
+	// TODO look into whether we can make flushing subsequent updates synchronously in the future.
+	flushSync();
+}
+
+/**
+ * @template V
+ * @param {Value<V>} signal
+ * @returns {V}
+ */
+function get(signal) {
+	var flags = signal.f;
+	var is_derived = (flags & DERIVED) !== 0;
+
+	// Register the dependency on the current reaction signal.
+	if (active_reaction !== null && !untracking) {
+		if (!reaction_sources?.includes(signal)) {
+			var deps = active_reaction.deps;
+			if (signal.rv < read_version) {
+				signal.rv = read_version;
+				// If the signal is accessing the same dependencies in the same
+				// order as it did last time, increment `skipped_deps`
+				// rather than updating `new_deps`, which creates GC cost
+				if (new_deps === null && deps !== null && deps[skipped_deps] === signal) {
+					skipped_deps++;
+				} else if (new_deps === null) {
+					new_deps = [signal];
+				} else if (!skip_reaction || !new_deps.includes(signal)) {
+					// Normally we can push duplicated dependencies to `new_deps`, but if we're inside
+					// an unowned derived because skip_reaction is true, then we need to ensure that
+					// we don't have duplicates
+					new_deps.push(signal);
+				}
+			}
+		}
+	} else if (
+		is_derived &&
+		/** @type {Derived} */ (signal).deps === null &&
+		/** @type {Derived} */ (signal).effects === null
+	) {
+		var derived = /** @type {Derived} */ (signal);
+		var parent = derived.parent;
+
+		if (parent !== null && (parent.f & UNOWNED) === 0) {
+			// If the derived is owned by another derived then mark it as unowned
+			// as the derived value might have been referenced in a different context
+			// since and thus its parent might not be its true owner anymore
+			derived.f ^= UNOWNED;
+		}
+	}
+
+	if (is_derived) {
+		derived = /** @type {Derived} */ (signal);
+
+		if (check_dirtiness(derived)) {
+			update_derived(derived);
+		}
+	}
+
+	if (is_destroying_effect && old_values.has(signal)) {
+		return old_values.get(signal);
+	}
+
+	return signal.v;
+}
+
+/**
+ * When used inside a [`$derived`](https://svelte.dev/docs/svelte/$derived) or [`$effect`](https://svelte.dev/docs/svelte/$effect),
+ * any state read inside `fn` will not be treated as a dependency.
+ *
+ * ```ts
+ * $effect(() => {
+ *   // this will run when `data` changes, but not when `time` changes
+ *   save(data, {
+ *     timestamp: untrack(() => time)
+ *   });
+ * });
+ * ```
+ * @template T
+ * @param {() => T} fn
+ * @returns {T}
+ */
+function untrack(fn) {
+	var previous_untracking = untracking;
+	try {
+		untracking = true;
+		return fn();
+	} finally {
+		untracking = previous_untracking;
+	}
+}
+
+const STATUS_MASK = -7169;
+
+/**
+ * @param {Signal} signal
+ * @param {number} status
+ * @returns {void}
+ */
+function set_signal_status(signal, status) {
+	signal.f = (signal.f & STATUS_MASK) | status;
+}
+
+/**
+ * Subset of delegated events which should be passive by default.
+ * These two are already passive via browser defaults on window, document and body.
+ * But since
+ * - we're delegating them
+ * - they happen often
+ * - they apply to mobile which is generally less performant
+ * we're marking them as passive by default for other elements, too.
+ */
+const PASSIVE_EVENTS = ['touchstart', 'touchmove'];
+
+/**
+ * Returns `true` if `name` is a passive event
+ * @param {string} name
+ */
+function is_passive_event(name) {
+	return PASSIVE_EVENTS.includes(name);
+}
+
+/** @type {Set<string>} */
+const all_registered_events = new Set();
+
+/** @type {Set<(events: Array<string>) => void>} */
+const root_event_handles = new Set();
+
+/**
+ * @param {Array<string>} events
+ * @returns {void}
+ */
+function delegate(events) {
+	for (var i = 0; i < events.length; i++) {
+		all_registered_events.add(events[i]);
+	}
+
+	for (var fn of root_event_handles) {
+		fn(events);
+	}
+}
+
+/**
+ * @this {EventTarget}
+ * @param {Event} event
+ * @returns {void}
+ */
+function handle_event_propagation(event) {
+	var handler_element = this;
+	var owner_document = /** @type {Node} */ (handler_element).ownerDocument;
+	var event_name = event.type;
+	var path = event.composedPath?.() || [];
+	var current_target = /** @type {null | Element} */ (path[0] || event.target);
+
+	// composedPath contains list of nodes the event has propagated through.
+	// We check __root to skip all nodes below it in case this is a
+	// parent of the __root node, which indicates that there's nested
+	// mounted apps. In this case we don't want to trigger events multiple times.
+	var path_idx = 0;
+
+	// @ts-expect-error is added below
+	var handled_at = event.__root;
+
+	if (handled_at) {
+		var at_idx = path.indexOf(handled_at);
+		if (
+			at_idx !== -1 &&
+			(handler_element === document || handler_element === /** @type {any} */ (window))
+		) {
+			// This is the fallback document listener or a window listener, but the event was already handled
+			// -> ignore, but set handle_at to document/window so that we're resetting the event
+			// chain in case someone manually dispatches the same event object again.
+			// @ts-expect-error
+			event.__root = handler_element;
+			return;
+		}
+
+		// We're deliberately not skipping if the index is higher, because
+		// someone could create an event programmatically and emit it multiple times,
+		// in which case we want to handle the whole propagation chain properly each time.
+		// (this will only be a false negative if the event is dispatched multiple times and
+		// the fallback document listener isn't reached in between, but that's super rare)
+		var handler_idx = path.indexOf(handler_element);
+		if (handler_idx === -1) {
+			// handle_idx can theoretically be -1 (happened in some JSDOM testing scenarios with an event listener on the window object)
+			// so guard against that, too, and assume that everything was handled at this point.
+			return;
+		}
+
+		if (at_idx <= handler_idx) {
+			path_idx = at_idx;
+		}
+	}
+
+	current_target = /** @type {Element} */ (path[path_idx] || event.target);
+	// there can only be one delegated event per element, and we either already handled the current target,
+	// or this is the very first target in the chain which has a non-delegated listener, in which case it's safe
+	// to handle a possible delegated event on it later (through the root delegation listener for example).
+	if (current_target === handler_element) return;
+
+	// Proxy currentTarget to correct target
+	define_property(event, 'currentTarget', {
+		configurable: true,
+		get() {
+			return current_target || owner_document;
+		}
+	});
+
+	// This started because of Chromium issue https://chromestatus.com/feature/5128696823545856,
+	// where removal or moving of of the DOM can cause sync `blur` events to fire, which can cause logic
+	// to run inside the current `active_reaction`, which isn't what we want at all. However, on reflection,
+	// it's probably best that all event handled by Svelte have this behaviour, as we don't really want
+	// an event handler to run in the context of another reaction or effect.
+	var previous_reaction = active_reaction;
+	var previous_effect = active_effect;
+	set_active_reaction(null);
+	set_active_effect(null);
+
+	try {
+		/**
+		 * @type {unknown}
+		 */
+		var throw_error;
+		/**
+		 * @type {unknown[]}
+		 */
+		var other_errors = [];
+
+		while (current_target !== null) {
+			/** @type {null | Element} */
+			var parent_element =
+				current_target.assignedSlot ||
+				current_target.parentNode ||
+				/** @type {any} */ (current_target).host ||
+				null;
+
+			try {
+				// @ts-expect-error
+				var delegated = current_target['__' + event_name];
+
+				if (
+					delegated != null &&
+					(!(/** @type {any} */ (current_target).disabled) ||
+						// DOM could've been updated already by the time this is reached, so we check this as well
+						// -> the target could not have been disabled because it emits the event in the first place
+						event.target === current_target)
+				) {
+					if (is_array(delegated)) {
+						var [fn, ...data] = delegated;
+						fn.apply(current_target, [event, ...data]);
+					} else {
+						delegated.call(current_target, event);
+					}
+				}
+			} catch (error) {
+				if (throw_error) {
+					other_errors.push(error);
+				} else {
+					throw_error = error;
+				}
+			}
+			if (event.cancelBubble || parent_element === handler_element || parent_element === null) {
+				break;
+			}
+			current_target = parent_element;
+		}
+
+		if (throw_error) {
+			for (let error of other_errors) {
+				// Throw the rest of the errors, one-by-one on a microtask
+				queueMicrotask(() => {
+					throw error;
+				});
+			}
+			throw throw_error;
+		}
+	} finally {
+		// @ts-expect-error is used above
+		event.__root = handler_element;
+		// @ts-ignore remove proxy on currentTarget
+		delete event.currentTarget;
+		set_active_reaction(previous_reaction);
+		set_active_effect(previous_effect);
+	}
+}
+
+/** @param {string} html */
+function create_fragment_from_html(html) {
+	var elem = document.createElement('template');
+	elem.innerHTML = html.replaceAll('<!>', '<!---->'); // XHTML compliance
+	return elem.content;
+}
+
+/** @import { Effect, TemplateNode } from '#client' */
+/** @import { TemplateStructure } from './types' */
+
+/**
+ * @param {TemplateNode} start
+ * @param {TemplateNode | null} end
+ */
+function assign_nodes(start, end) {
+	var effect = /** @type {Effect} */ (active_effect);
+	if (effect.nodes_start === null) {
+		effect.nodes_start = start;
+		effect.nodes_end = end;
+	}
+}
+
+/**
+ * @param {string} content
+ * @param {number} flags
+ * @returns {() => Node | Node[]}
+ */
+/*#__NO_SIDE_EFFECTS__*/
+function from_html(content, flags) {
+	var is_fragment = (flags & TEMPLATE_FRAGMENT) !== 0;
+	var use_import_node = (flags & TEMPLATE_USE_IMPORT_NODE) !== 0;
+
+	/** @type {Node} */
+	var node;
+
+	/**
+	 * Whether or not the first item is a text/element node. If not, we need to
+	 * create an additional comment node to act as `effect.nodes.start`
+	 */
+	var has_start = !content.startsWith('<!>');
+
+	return () => {
+
+		if (node === undefined) {
+			node = create_fragment_from_html(has_start ? content : '<!>' + content);
+			if (!is_fragment) node = /** @type {Node} */ (get_first_child(node));
+		}
+
+		var clone = /** @type {TemplateNode} */ (
+			use_import_node || is_firefox ? document.importNode(node, true) : node.cloneNode(true)
+		);
+
+		if (is_fragment) {
+			var start = /** @type {TemplateNode} */ (get_first_child(clone));
+			var end = /** @type {TemplateNode} */ (clone.lastChild);
+
+			assign_nodes(start, end);
+		} else {
+			assign_nodes(clone, clone);
+		}
+
+		return clone;
+	};
+}
+
+/**
+ * Don't mark this as side-effect-free, hydration needs to walk all nodes
+ * @param {any} value
+ */
+function text(value = '') {
+	{
+		var t = create_text(value + '');
+		assign_nodes(t, t);
+		return t;
+	}
+}
+
+function comment() {
+
+	var frag = document.createDocumentFragment();
+	var start = document.createComment('');
+	var anchor = create_text();
+	frag.append(start, anchor);
+
+	assign_nodes(start, anchor);
+
+	return frag;
+}
+
+/**
+ * Assign the created (or in hydration mode, traversed) dom elements to the current block
+ * and insert the elements into the dom (in client mode).
+ * @param {Text | Comment | Element} anchor
+ * @param {DocumentFragment | Element} dom
+ */
+function append(anchor, dom) {
+
+	if (anchor === null) {
+		// edge case — void `<svelte:element>` with content
+		return;
+	}
+
+	anchor.before(/** @type {Node} */ (dom));
+}
+
+/** @import { ComponentContext, Effect, TemplateNode } from '#client' */
+/** @import { Component, ComponentType, SvelteComponent, MountOptions } from '../../index.js' */
+
+/**
+ * @param {Element} text
+ * @param {string} value
+ * @returns {void}
+ */
+function set_text(text, value) {
+	// For objects, we apply string coercion (which might make things like $state array references in the template reactive) before diffing
+	var str = value == null ? '' : typeof value === 'object' ? value + '' : value;
+	// @ts-expect-error
+	if (str !== (text.__t ??= text.nodeValue)) {
+		// @ts-expect-error
+		text.__t = str;
+		text.nodeValue = str + '';
+	}
+}
+
+/**
+ * Mounts a component to the given target and returns the exports and potentially the props (if compiled with `accessors: true`) of the component.
+ * Transitions will play during the initial render unless the `intro` option is set to `false`.
+ *
+ * @template {Record<string, any>} Props
+ * @template {Record<string, any>} Exports
+ * @param {ComponentType<SvelteComponent<Props>> | Component<Props, Exports, any>} component
+ * @param {MountOptions<Props>} options
+ * @returns {Exports}
+ */
+function mount(component, options) {
+	return _mount(component, options);
+}
+
+/** @type {Map<string, number>} */
+const document_listeners = new Map();
+
+/**
+ * @template {Record<string, any>} Exports
+ * @param {ComponentType<SvelteComponent<any>> | Component<any>} Component
+ * @param {MountOptions} options
+ * @returns {Exports}
+ */
+function _mount(Component, { target, anchor, props = {}, events, context, intro = true }) {
+	init_operations();
+
+	var registered_events = new Set();
+
+	/** @param {Array<string>} events */
+	var event_handle = (events) => {
+		for (var i = 0; i < events.length; i++) {
+			var event_name = events[i];
+
+			if (registered_events.has(event_name)) continue;
+			registered_events.add(event_name);
+
+			var passive = is_passive_event(event_name);
+
+			// Add the event listener to both the container and the document.
+			// The container listener ensures we catch events from within in case
+			// the outer content stops propagation of the event.
+			target.addEventListener(event_name, handle_event_propagation, { passive });
+
+			var n = document_listeners.get(event_name);
+
+			if (n === undefined) {
+				// The document listener ensures we catch events that originate from elements that were
+				// manually moved outside of the container (e.g. via manual portals).
+				document.addEventListener(event_name, handle_event_propagation, { passive });
+				document_listeners.set(event_name, 1);
+			} else {
+				document_listeners.set(event_name, n + 1);
+			}
+		}
+	};
+
+	event_handle(array_from(all_registered_events));
+	root_event_handles.add(event_handle);
+
+	/** @type {Exports} */
+	// @ts-expect-error will be defined because the render effect runs synchronously
+	var component = undefined;
+
+	var unmount = component_root(() => {
+		var anchor_node = anchor ?? target.appendChild(create_text());
+
+		branch(() => {
+			if (context) {
+				push({});
+				var ctx = /** @type {ComponentContext} */ (component_context);
+				ctx.c = context;
+			}
+
+			if (events) {
+				// We can't spread the object or else we'd lose the state proxy stuff, if it is one
+				/** @type {any} */ (props).$$events = events;
+			}
+			// @ts-expect-error the public typings are not what the actual function looks like
+			component = Component(anchor_node, props) || {};
+
+			if (context) {
+				pop();
+			}
+		});
+
+		return () => {
+			for (var event_name of registered_events) {
+				target.removeEventListener(event_name, handle_event_propagation);
+
+				var n = /** @type {number} */ (document_listeners.get(event_name));
+
+				if (--n === 0) {
+					document.removeEventListener(event_name, handle_event_propagation);
+					document_listeners.delete(event_name);
+				} else {
+					document_listeners.set(event_name, n);
+				}
+			}
+
+			root_event_handles.delete(event_handle);
+
+			if (anchor_node !== anchor) {
+				anchor_node.parentNode?.removeChild(anchor_node);
+			}
+		};
+	});
+
+	mounted_components.set(component, unmount);
+	return component;
+}
+
+/**
+ * References of the components that were mounted or hydrated.
+ * Uses a `WeakMap` to avoid memory leaks.
+ */
+let mounted_components = new WeakMap();
+
+/** @import { Effect, TemplateNode } from '#client' */
+
+/**
+ * @param {TemplateNode} node
+ * @param {(branch: (fn: (anchor: Node, elseif?: [number,number]) => void, flag?: boolean) => void) => void} fn
+ * @param {[number,number]} [elseif]
+ * @returns {void}
+ */
+function if_block(node, fn, [root_index, hydrate_index] = [0, 0]) {
+
+	var anchor = node;
+
+	/** @type {Effect | null} */
+	var consequent_effect = null;
+
+	/** @type {Effect | null} */
+	var alternate_effect = null;
+
+	/** @type {UNINITIALIZED | boolean | null} */
+	var condition = UNINITIALIZED;
+
+	var flags = root_index > 0 ? EFFECT_TRANSPARENT : 0;
+
+	var has_branch = false;
+
+	const set_branch = (
+		/** @type {(anchor: Node, elseif?: [number,number]) => void} */ fn,
+		flag = true
+	) => {
+		has_branch = true;
+		update_branch(flag, fn);
+	};
+
+	const update_branch = (
+		/** @type {boolean | null} */ new_condition,
+		/** @type {null | ((anchor: Node, elseif?: [number,number]) => void)} */ fn
+	) => {
+		if (condition === (condition = new_condition)) return;
+
+		if (condition) {
+			if (consequent_effect) {
+				resume_effect(consequent_effect);
+			} else if (fn) {
+				consequent_effect = branch(() => fn(anchor));
+			}
+
+			if (alternate_effect) {
+				pause_effect(alternate_effect, () => {
+					alternate_effect = null;
+				});
+			}
+		} else {
+			if (alternate_effect) {
+				resume_effect(alternate_effect);
+			} else if (fn) {
+				alternate_effect = branch(() => fn(anchor, [root_index + 1, hydrate_index]));
+			}
+
+			if (consequent_effect) {
+				pause_effect(consequent_effect, () => {
+					consequent_effect = null;
+				});
+			}
+		}
+	};
+
+	block(() => {
+		has_branch = false;
+		fn(set_branch);
+		if (!has_branch) {
+			update_branch(null, null);
+		}
+	}, flags);
+}
+
+/** @import { EachItem, EachState, Effect, MaybeSource, Source, TemplateNode, TransitionManager, Value } from '#client' */
+
+/**
+ * @param {any} _
+ * @param {number} i
+ */
+function index(_, i) {
+	return i;
+}
+
+/**
+ * Pause multiple effects simultaneously, and coordinate their
+ * subsequent destruction. Used in each blocks
+ * @param {EachState} state
+ * @param {EachItem[]} items
+ * @param {null | Node} controlled_anchor
+ * @param {Map<any, EachItem>} items_map
+ */
+function pause_effects(state, items, controlled_anchor, items_map) {
+	/** @type {TransitionManager[]} */
+	var transitions = [];
+	var length = items.length;
+
+	for (var i = 0; i < length; i++) {
+		pause_children(items[i].e, transitions, true);
+	}
+
+	var is_controlled = length > 0 && transitions.length === 0 && controlled_anchor !== null;
+	// If we have a controlled anchor, it means that the each block is inside a single
+	// DOM element, so we can apply a fast-path for clearing the contents of the element.
+	if (is_controlled) {
+		var parent_node = /** @type {Element} */ (
+			/** @type {Element} */ (controlled_anchor).parentNode
+		);
+		clear_text_content(parent_node);
+		parent_node.append(/** @type {Element} */ (controlled_anchor));
+		items_map.clear();
+		link(state, items[0].prev, items[length - 1].next);
+	}
+
+	run_out_transitions(transitions, () => {
+		for (var i = 0; i < length; i++) {
+			var item = items[i];
+			if (!is_controlled) {
+				items_map.delete(item.k);
+				link(state, item.prev, item.next);
+			}
+			destroy_effect(item.e, !is_controlled);
+		}
+	});
+}
+
+/**
+ * @template V
+ * @param {Element | Comment} node The next sibling node, or the parent node if this is a 'controlled' block
+ * @param {number} flags
+ * @param {() => V[]} get_collection
+ * @param {(value: V, index: number) => any} get_key
+ * @param {(anchor: Node, item: MaybeSource<V>, index: MaybeSource<number>) => void} render_fn
+ * @param {null | ((anchor: Node) => void)} fallback_fn
+ * @returns {void}
+ */
+function each(node, flags, get_collection, get_key, render_fn, fallback_fn = null) {
+	var anchor = node;
+
+	/** @type {EachState} */
+	var state = { flags, items: new Map(), first: null };
+
+	var is_controlled = (flags & EACH_IS_CONTROLLED) !== 0;
+
+	if (is_controlled) {
+		var parent_node = /** @type {Element} */ (node);
+
+		anchor = parent_node.appendChild(create_text());
+	}
+
+	/** @type {Effect | null} */
+	var fallback = null;
+
+	var was_empty = false;
+
+	// TODO: ideally we could use derived for runes mode but because of the ability
+	// to use a store which can be mutated, we can't do that here as mutating a store
+	// will still result in the collection array being the same from the store
+	var each_array = derived_safe_equal(() => {
+		var collection = get_collection();
+
+		return is_array(collection) ? collection : collection == null ? [] : array_from(collection);
+	});
+
+	block(() => {
+		var array = get(each_array);
+		var length = array.length;
+
+		if (was_empty && length === 0) {
+			// ignore updates if the array is empty,
+			// and it already was empty on previous run
+			return;
+		}
+		was_empty = length === 0;
+
+		{
+			reconcile(array, state, anchor, render_fn, flags, get_key, get_collection);
+		}
+
+		if (fallback_fn !== null) {
+			if (length === 0) {
+				if (fallback) {
+					resume_effect(fallback);
+				} else {
+					fallback = branch(() => fallback_fn(anchor));
+				}
+			} else if (fallback !== null) {
+				pause_effect(fallback, () => {
+					fallback = null;
+				});
+			}
+		}
+
+		// When we mount the each block for the first time, the collection won't be
+		// connected to this effect as the effect hasn't finished running yet and its deps
+		// won't be assigned. However, it's possible that when reconciling the each block
+		// that a mutation occurred and it's made the collection MAYBE_DIRTY, so reading the
+		// collection again can provide consistency to the reactive graph again as the deriveds
+		// will now be `CLEAN`.
+		get(each_array);
+	});
+}
+
+/**
+ * Add, remove, or reorder items output by an each block as its input changes
+ * @template V
+ * @param {Array<V>} array
+ * @param {EachState} state
+ * @param {Element | Comment | Text} anchor
+ * @param {(anchor: Node, item: MaybeSource<V>, index: number | Source<number>, collection: () => V[]) => void} render_fn
+ * @param {number} flags
+ * @param {(value: V, index: number) => any} get_key
+ * @param {() => V[]} get_collection
+ * @returns {void}
+ */
+function reconcile(array, state, anchor, render_fn, flags, get_key, get_collection) {
+	var is_animated = (flags & EACH_IS_ANIMATED) !== 0;
+	var should_update = (flags & (EACH_ITEM_REACTIVE | EACH_INDEX_REACTIVE)) !== 0;
+
+	var length = array.length;
+	var items = state.items;
+	var first = state.first;
+	var current = first;
+
+	/** @type {undefined | Set<EachItem>} */
+	var seen;
+
+	/** @type {EachItem | null} */
+	var prev = null;
+
+	/** @type {undefined | Set<EachItem>} */
+	var to_animate;
+
+	/** @type {EachItem[]} */
+	var matched = [];
+
+	/** @type {EachItem[]} */
+	var stashed = [];
+
+	/** @type {V} */
+	var value;
+
+	/** @type {any} */
+	var key;
+
+	/** @type {EachItem | undefined} */
+	var item;
+
+	/** @type {number} */
+	var i;
+
+	if (is_animated) {
+		for (i = 0; i < length; i += 1) {
+			value = array[i];
+			key = get_key(value, i);
+			item = items.get(key);
+
+			if (item !== undefined) {
+				item.a?.measure();
+				(to_animate ??= new Set()).add(item);
+			}
+		}
+	}
+
+	for (i = 0; i < length; i += 1) {
+		value = array[i];
+		key = get_key(value, i);
+		item = items.get(key);
+
+		if (item === undefined) {
+			var child_anchor = current ? /** @type {TemplateNode} */ (current.e.nodes_start) : anchor;
+
+			prev = create_item(
+				child_anchor,
+				state,
+				prev,
+				prev === null ? state.first : prev.next,
+				value,
+				key,
+				i,
+				render_fn,
+				flags,
+				get_collection
+			);
+
+			items.set(key, prev);
+
+			matched = [];
+			stashed = [];
+
+			current = prev.next;
+			continue;
+		}
+
+		if (should_update) {
+			update_item(item, value, i, flags);
+		}
+
+		if ((item.e.f & INERT) !== 0) {
+			resume_effect(item.e);
+			if (is_animated) {
+				item.a?.unfix();
+				(to_animate ??= new Set()).delete(item);
+			}
+		}
+
+		if (item !== current) {
+			if (seen !== undefined && seen.has(item)) {
+				if (matched.length < stashed.length) {
+					// more efficient to move later items to the front
+					var start = stashed[0];
+					var j;
+
+					prev = start.prev;
+
+					var a = matched[0];
+					var b = matched[matched.length - 1];
+
+					for (j = 0; j < matched.length; j += 1) {
+						move(matched[j], start, anchor);
+					}
+
+					for (j = 0; j < stashed.length; j += 1) {
+						seen.delete(stashed[j]);
+					}
+
+					link(state, a.prev, b.next);
+					link(state, prev, a);
+					link(state, b, start);
+
+					current = start;
+					prev = b;
+					i -= 1;
+
+					matched = [];
+					stashed = [];
+				} else {
+					// more efficient to move earlier items to the back
+					seen.delete(item);
+					move(item, current, anchor);
+
+					link(state, item.prev, item.next);
+					link(state, item, prev === null ? state.first : prev.next);
+					link(state, prev, item);
+
+					prev = item;
+				}
+
+				continue;
+			}
+
+			matched = [];
+			stashed = [];
+
+			while (current !== null && current.k !== key) {
+				// If the each block isn't inert and an item has an effect that is already inert,
+				// skip over adding it to our seen Set as the item is already being handled
+				if ((current.e.f & INERT) === 0) {
+					(seen ??= new Set()).add(current);
+				}
+				stashed.push(current);
+				current = current.next;
+			}
+
+			if (current === null) {
+				continue;
+			}
+
+			item = current;
+		}
+
+		matched.push(item);
+		prev = item;
+		current = item.next;
+	}
+
+	if (current !== null || seen !== undefined) {
+		var to_destroy = seen === undefined ? [] : array_from(seen);
+
+		while (current !== null) {
+			// If the each block isn't inert, then inert effects are currently outroing and will be removed once the transition is finished
+			if ((current.e.f & INERT) === 0) {
+				to_destroy.push(current);
+			}
+			current = current.next;
+		}
+
+		var destroy_length = to_destroy.length;
+
+		if (destroy_length > 0) {
+			var controlled_anchor = (flags & EACH_IS_CONTROLLED) !== 0 && length === 0 ? anchor : null;
+
+			if (is_animated) {
+				for (i = 0; i < destroy_length; i += 1) {
+					to_destroy[i].a?.measure();
+				}
+
+				for (i = 0; i < destroy_length; i += 1) {
+					to_destroy[i].a?.fix();
+				}
+			}
+
+			pause_effects(state, to_destroy, controlled_anchor, items);
+		}
+	}
+
+	if (is_animated) {
+		queue_micro_task(() => {
+			if (to_animate === undefined) return;
+			for (item of to_animate) {
+				item.a?.apply();
+			}
+		});
+	}
+
+	/** @type {Effect} */ (active_effect).first = state.first && state.first.e;
+	/** @type {Effect} */ (active_effect).last = prev && prev.e;
+}
+
+/**
+ * @param {EachItem} item
+ * @param {any} value
+ * @param {number} index
+ * @param {number} type
+ * @returns {void}
+ */
+function update_item(item, value, index, type) {
+	if ((type & EACH_ITEM_REACTIVE) !== 0) {
+		internal_set(item.v, value);
+	}
+
+	if ((type & EACH_INDEX_REACTIVE) !== 0) {
+		internal_set(/** @type {Value<number>} */ (item.i), index);
+	} else {
+		item.i = index;
+	}
+}
+
+/**
+ * @template V
+ * @param {Node} anchor
+ * @param {EachState} state
+ * @param {EachItem | null} prev
+ * @param {EachItem | null} next
+ * @param {V} value
+ * @param {unknown} key
+ * @param {number} index
+ * @param {(anchor: Node, item: V | Source<V>, index: number | Value<number>, collection: () => V[]) => void} render_fn
+ * @param {number} flags
+ * @param {() => V[]} get_collection
+ * @returns {EachItem}
+ */
+function create_item(
+	anchor,
+	state,
+	prev,
+	next,
+	value,
+	key,
+	index,
+	render_fn,
+	flags,
+	get_collection
+) {
+	var reactive = (flags & EACH_ITEM_REACTIVE) !== 0;
+	var mutable = (flags & EACH_ITEM_IMMUTABLE) === 0;
+
+	var v = reactive ? (mutable ? mutable_source(value) : source(value)) : value;
+	var i = (flags & EACH_INDEX_REACTIVE) === 0 ? index : source(index);
+
+	/** @type {EachItem} */
+	var item = {
+		i,
+		v,
+		k: key,
+		a: null,
+		// @ts-expect-error
+		e: null,
+		prev,
+		next
+	};
+
+	try {
+		item.e = branch(() => render_fn(anchor, v, i, get_collection), hydrating);
+
+		item.e.prev = prev && prev.e;
+		item.e.next = next && next.e;
+
+		if (prev === null) {
+			state.first = item;
+		} else {
+			prev.next = item;
+			prev.e.next = item.e;
+		}
+
+		if (next !== null) {
+			next.prev = item;
+			next.e.prev = item.e;
+		}
+
+		return item;
+	} finally {
+	}
+}
+
+/**
+ * @param {EachItem} item
+ * @param {EachItem | null} next
+ * @param {Text | Element | Comment} anchor
+ */
+function move(item, next, anchor) {
+	var end = item.next ? /** @type {TemplateNode} */ (item.next.e.nodes_start) : anchor;
+
+	var dest = next ? /** @type {TemplateNode} */ (next.e.nodes_start) : anchor;
+	var node = /** @type {TemplateNode} */ (item.e.nodes_start);
+
+	while (node !== end) {
+		var next_node = /** @type {TemplateNode} */ (get_next_sibling(node));
+		dest.before(node);
+		node = next_node;
+	}
+}
+
+/**
+ * @param {EachState} state
+ * @param {EachItem | null} prev
+ * @param {EachItem | null} next
+ */
+function link(state, prev, next) {
+	if (prev === null) {
+		state.first = next;
+	} else {
+		prev.next = next;
+		prev.e.next = next && next.e;
+	}
+
+	if (next !== null) {
+		next.prev = prev;
+		next.e.prev = prev && prev.e;
+	}
+}
+
+const whitespace = [...' \t\n\r\f\u00a0\u000b\ufeff'];
+
+/**
+ * @param {any} value
+ * @param {string | null} [hash]
+ * @param {Record<string, boolean>} [directives]
+ * @returns {string | null}
+ */
+function to_class(value, hash, directives) {
+	var classname = value == null ? '' : '' + value;
+
+	if (hash) {
+		classname = classname ? classname + ' ' + hash : hash;
+	}
+
+	if (directives) {
+		for (var key in directives) {
+			if (directives[key]) {
+				classname = classname ? classname + ' ' + key : key;
+			} else if (classname.length) {
+				var len = key.length;
+				var a = 0;
+
+				while ((a = classname.indexOf(key, a)) >= 0) {
+					var b = a + len;
+
+					if (
+						(a === 0 || whitespace.includes(classname[a - 1])) &&
+						(b === classname.length || whitespace.includes(classname[b]))
+					) {
+						classname = (a === 0 ? '' : classname.substring(0, a)) + classname.substring(b + 1);
+					} else {
+						a = b;
+					}
+				}
+			}
+		}
+	}
+
+	return classname === '' ? null : classname;
+}
+
+/**
+ * @param {Element} dom
+ * @param {boolean | number} is_html
+ * @param {string | null} value
+ * @param {string} [hash]
+ * @param {Record<string, any>} [prev_classes]
+ * @param {Record<string, any>} [next_classes]
+ * @returns {Record<string, boolean> | undefined}
+ */
+function set_class(dom, is_html, value, hash, prev_classes, next_classes) {
+	// @ts-expect-error need to add __className to patched prototype
+	var prev = dom.__className;
+
+	if (
+		prev !== value ||
+		prev === undefined // for edge case of `class={undefined}`
+	) {
+		var next_class_name = to_class(value, hash, next_classes);
+
+		{
+			// Removing the attribute when the value is only an empty string causes
+			// performance issues vs simply making the className an empty string. So
+			// we should only remove the class if the value is nullish
+			// and there no hash/directives :
+			if (next_class_name == null) {
+				dom.removeAttribute('class');
+			} else {
+				dom.className = next_class_name;
+			}
+		}
+
+		// @ts-expect-error need to add __className to patched prototype
+		dom.__className = value;
+	} else if (next_classes && prev_classes !== next_classes) {
+		for (var key in next_classes) {
+			var is_present = !!next_classes[key];
+
+			if (prev_classes == null || is_present !== !!prev_classes[key]) {
+				dom.classList.toggle(key, is_present);
+			}
+		}
+	}
+
+	return next_classes;
+}
+
+/** @import { Effect } from '#client' */
+
+const IS_CUSTOM_ELEMENT = Symbol('is custom element');
+const IS_HTML = Symbol('is html');
+
+/**
+ * @param {Element} element
+ * @param {any} value
+ */
+function set_value(element, value) {
+	var attributes = get_attributes(element);
+
+	if (
+		attributes.value ===
+			(attributes.value =
+				// treat null and undefined the same for the initial value
+				value ?? undefined) ||
+		// @ts-expect-error
+		// `progress` elements always need their value set when it's `0`
+		(element.value === value && (value !== 0 || element.nodeName !== 'PROGRESS'))
+	) {
+		return;
+	}
+
+	// @ts-expect-error
+	element.value = value ?? '';
+}
+
+/**
+ * Sets the `selected` attribute on an `option` element.
+ * Not set through the property because that doesn't reflect to the DOM,
+ * which means it wouldn't be taken into account when a form is reset.
+ * @param {HTMLOptionElement} element
+ * @param {boolean} selected
+ */
+function set_selected(element, selected) {
+	if (selected) {
+		// The selected option could've changed via user selection, and
+		// setting the value without this check would set it back.
+		if (!element.hasAttribute('selected')) {
+			element.setAttribute('selected', '');
+		}
+	} else {
+		element.removeAttribute('selected');
+	}
+}
+
+/**
+ * @param {Element} element
+ * @param {string} attribute
+ * @param {string | null} value
+ * @param {boolean} [skip_warning]
+ */
+function set_attribute(element, attribute, value, skip_warning) {
+	var attributes = get_attributes(element);
+
+	if (attributes[attribute] === (attributes[attribute] = value)) return;
+
+	if (attribute === 'loading') {
+		// @ts-expect-error
+		element[LOADING_ATTR_SYMBOL] = value;
+	}
+
+	if (value == null) {
+		element.removeAttribute(attribute);
+	} else if (typeof value !== 'string' && get_setters(element).includes(attribute)) {
+		// @ts-ignore
+		element[attribute] = value;
+	} else {
+		element.setAttribute(attribute, value);
+	}
+}
+
+/**
+ *
+ * @param {Element} element
+ */
+function get_attributes(element) {
+	return /** @type {Record<string | symbol, unknown>} **/ (
+		// @ts-expect-error
+		element.__attributes ??= {
+			[IS_CUSTOM_ELEMENT]: element.nodeName.includes('-'),
+			[IS_HTML]: element.namespaceURI === NAMESPACE_HTML
+		}
+	);
+}
+
+/** @type {Map<string, string[]>} */
+var setters_cache = new Map();
+
+/** @param {Element} element */
+function get_setters(element) {
+	var setters = setters_cache.get(element.nodeName);
+	if (setters) return setters;
+	setters_cache.set(element.nodeName, (setters = []));
+
+	var descriptors;
+	var proto = element; // In the case of custom elements there might be setters on the instance
+	var element_proto = Element.prototype;
+
+	// Stop at Element, from there on there's only unnecessary setters we're not interested in
+	// Do not use contructor.name here as that's unreliable in some browser environments
+	while (element_proto !== proto) {
+		descriptors = get_descriptors(proto);
+
+		for (var key in descriptors) {
+			if (descriptors[key].set) {
+				setters.push(key);
+			}
+		}
+
+		proto = get_prototype_of(proto);
+	}
+
+	return setters;
+}
+
+/**
+ * @param {any} bound_value
+ * @param {Element} element_or_component
+ * @returns {boolean}
+ */
+function is_bound_this(bound_value, element_or_component) {
+	return (
+		bound_value === element_or_component || bound_value?.[STATE_SYMBOL] === element_or_component
+	);
+}
+
+/**
+ * @param {any} element_or_component
+ * @param {(value: unknown, ...parts: unknown[]) => void} update
+ * @param {(...parts: unknown[]) => unknown} get_value
+ * @param {() => unknown[]} [get_parts] Set if the this binding is used inside an each block,
+ * 										returns all the parts of the each block context that are used in the expression
+ * @returns {void}
+ */
+function bind_this(element_or_component = {}, update, get_value, get_parts) {
+	effect(() => {
+		/** @type {unknown[]} */
+		var old_parts;
+
+		/** @type {unknown[]} */
+		var parts;
+
+		render_effect(() => {
+			old_parts = parts;
+			// We only track changes to the parts, not the value itself to avoid unnecessary reruns.
+			parts = [];
+
+			untrack(() => {
+				if (element_or_component !== get_value(...parts)) {
+					update(element_or_component, ...parts);
+					// If this is an effect rerun (cause: each block context changes), then nullfiy the binding at
+					// the previous position if it isn't already taken over by a different effect.
+					if (old_parts && is_bound_this(get_value(...old_parts), element_or_component)) {
+						update(null, ...old_parts);
+					}
+				}
+			});
+		});
+
+		return () => {
+			// We cannot use effects in the teardown phase, we we use a microtask instead.
+			queue_micro_task(() => {
+				if (parts && is_bound_this(get_value(...parts), element_or_component)) {
+					update(null, ...parts);
+				}
+			});
+		};
+	});
+
+	return element_or_component;
+}
+
+/** @import { StoreReferencesContainer } from '#client' */
+/** @import { Store } from '#shared' */
+
+/**
+ * Whether or not the prop currently being read is a store binding, as in
+ * `<Child bind:x={$y} />`. If it is, we treat the prop as mutable even in
+ * runes mode, and skip `binding_property_non_reactive` validation
+ */
+let is_store_binding = false;
+
+/**
+ * Returns a tuple that indicates whether `fn()` reads a prop that is a store binding.
+ * Used to prevent `binding_property_non_reactive` validation false positives and
+ * ensure that these props are treated as mutable even in runes mode
+ * @template T
+ * @param {() => T} fn
+ * @returns {[T, boolean]}
+ */
+function capture_store_binding(fn) {
+	var previous_is_store_binding = is_store_binding;
+
+	try {
+		is_store_binding = false;
+		return [fn(), is_store_binding];
+	} finally {
+		is_store_binding = previous_is_store_binding;
+	}
+}
+
+/** @import { Derived, Source } from './types.js' */
+
+/**
+ * @param {Derived} current_value
+ * @returns {boolean}
+ */
+function has_destroyed_component_ctx(current_value) {
+	return current_value.ctx?.d ?? false;
+}
+
+/**
+ * This function is responsible for synchronizing a possibly bound prop with the inner component state.
+ * It is used whenever the compiler sees that the component writes to the prop, or when it has a default prop_value.
+ * @template V
+ * @param {Record<string, unknown>} props
+ * @param {string} key
+ * @param {number} flags
+ * @param {V | (() => V)} [fallback]
+ * @returns {(() => V | ((arg: V) => V) | ((arg: V, mutation: boolean) => V))}
+ */
+function prop(props, key, flags, fallback) {
+	var immutable = (flags & PROPS_IS_IMMUTABLE) !== 0;
+	var runes = true;
+	var bindable = (flags & PROPS_IS_BINDABLE) !== 0;
+	var lazy = (flags & PROPS_IS_LAZY_INITIAL) !== 0;
+	var is_store_sub = false;
+	var prop_value;
+
+	if (bindable) {
+		[prop_value, is_store_sub] = capture_store_binding(() => /** @type {V} */ (props[key]));
+	} else {
+		prop_value = /** @type {V} */ (props[key]);
+	}
+
+	// Can be the case when someone does `mount(Component, props)` with `let props = $state({...})`
+	// or `createClassComponent(Component, props)`
+	var is_entry_props = STATE_SYMBOL in props || LEGACY_PROPS in props;
+
+	var setter =
+		(bindable &&
+			(get_descriptor(props, key)?.set ??
+				(is_entry_props && key in props && ((v) => (props[key] = v))))) ||
+		undefined;
+
+	var fallback_value = /** @type {V} */ (fallback);
+	var fallback_dirty = true;
+	var fallback_used = false;
+
+	var get_fallback = () => {
+		fallback_used = true;
+		if (fallback_dirty) {
+			fallback_dirty = false;
+			if (lazy) {
+				fallback_value = untrack(/** @type {() => V} */ (fallback));
+			} else {
+				fallback_value = /** @type {V} */ (fallback);
+			}
+		}
+
+		return fallback_value;
+	};
+
+	if (prop_value === undefined && fallback !== undefined) {
+		if (setter && runes) {
+			props_invalid_value();
+		}
+
+		prop_value = get_fallback();
+		if (setter) setter(prop_value);
+	}
+
+	/** @type {() => V} */
+	var getter;
+	{
+		getter = () => {
+			var value = /** @type {V} */ (props[key]);
+			if (value === undefined) return get_fallback();
+			fallback_dirty = true;
+			fallback_used = false;
+			return value;
+		};
+	}
+
+	// easy mode — prop is never written to
+	if ((flags & PROPS_IS_UPDATED) === 0) {
+		return getter;
+	}
+
+	// intermediate mode — prop is written to, but the parent component had
+	// `bind:foo` which means we can just call `$$props.foo = value` directly
+	if (setter) {
+		var legacy_parent = props.$$legacy;
+		return function (/** @type {any} */ value, /** @type {boolean} */ mutation) {
+			if (arguments.length > 0) {
+				// We don't want to notify if the value was mutated and the parent is in runes mode.
+				// In that case the state proxy (if it exists) should take care of the notification.
+				// If the parent is not in runes mode, we need to notify on mutation, too, that the prop
+				// has changed because the parent will not be able to detect the change otherwise.
+				if (!mutation || legacy_parent || is_store_sub) {
+					/** @type {Function} */ (setter)(mutation ? getter() : value);
+				}
+				return value;
+			} else {
+				return getter();
+			}
+		};
+	}
+
+	// hard mode. this is where it gets ugly — the value in the child should
+	// synchronize with the parent, but it should also be possible to temporarily
+	// set the value to something else locally.
+	var from_child = false;
+
+	// The derived returns the current value. The underlying mutable
+	// source is written to from various places to persist this value.
+	var inner_current_value = mutable_source(prop_value);
+	var current_value = derived(() => {
+		var parent_value = getter();
+		var child_value = get(inner_current_value);
+
+		if (from_child) {
+			from_child = false;
+			return child_value;
+		}
+		return (inner_current_value.v = parent_value);
+	});
+
+	// Ensure we eagerly capture the initial value if it's bindable
+	if (bindable) {
+		get(current_value);
+	}
+
+	if (!immutable) current_value.equals = safe_equals;
+
+	return function (/** @type {any} */ value, /** @type {boolean} */ mutation) {
+
+		if (arguments.length > 0) {
+			const new_value = mutation ? get(current_value) : bindable ? proxy(value) : value;
+
+			if (!current_value.equals(new_value)) {
+				from_child = true;
+				set(inner_current_value, new_value);
+				// To ensure the fallback value is consistent when used with proxies, we
+				// update the local fallback_value, but only if the fallback is actively used
+				if (fallback_used && fallback_value !== undefined) {
+					fallback_value = new_value;
+				}
+
+				if (has_destroyed_component_ctx(current_value)) {
+					return value;
+				}
+
+				untrack(() => get(current_value)); // force a synchronisation immediately
+			}
+
+			return value;
+		}
+
+		if (has_destroyed_component_ctx(current_value)) {
+			return current_value.v;
+		}
+
+		return get(current_value);
+	};
+}
+
+/** @import { ComponentContext, ComponentContextLegacy } from '#client' */
+/** @import { EventDispatcher } from './index.js' */
+/** @import { NotFunction } from './internal/types.js' */
+
+/**
+ * `onMount`, like [`$effect`](https://svelte.dev/docs/svelte/$effect), schedules a function to run as soon as the component has been mounted to the DOM.
+ * Unlike `$effect`, the provided function only runs once.
+ *
+ * It must be called during the component's initialisation (but doesn't need to live _inside_ the component;
+ * it can be called from an external module). If a function is returned _synchronously_ from `onMount`,
+ * it will be called when the component is unmounted.
+ *
+ * `onMount` functions do not run during [server-side rendering](https://svelte.dev/docs/svelte/svelte-server#render).
+ *
+ * @template T
+ * @param {() => NotFunction<T> | Promise<NotFunction<T>> | (() => any)} fn
+ * @returns {void}
  */
 function onMount(fn) {
-    get_current_component().$$.on_mount.push(fn);
+	if (component_context === null) {
+		lifecycle_outside_component();
+	}
+
+	{
+		user_effect(() => {
+			const cleanup = untrack(fn);
+			if (typeof cleanup === 'function') return /** @type {() => void} */ (cleanup);
+		});
+	}
 }
+
 /**
  * Schedules a callback to run immediately before the component is unmounted.
  *
  * Out of `onMount`, `beforeUpdate`, `afterUpdate` and `onDestroy`, this is the
  * only one that runs inside a server-side component.
  *
- * https://svelte.dev/docs#run-time-svelte-ondestroy
+ * @param {() => any} fn
+ * @returns {void}
  */
 function onDestroy(fn) {
-    get_current_component().$$.on_destroy.push(fn);
+	if (component_context === null) {
+		lifecycle_outside_component();
+	}
+
+	onMount(() => () => untrack(fn));
 }
 
-const dirty_components = [];
-const binding_callbacks = [];
-let render_callbacks = [];
-const flush_callbacks = [];
-const resolved_promise = /* @__PURE__ */ Promise.resolve();
-let update_scheduled = false;
-function schedule_update() {
-    if (!update_scheduled) {
-        update_scheduled = true;
-        resolved_promise.then(flush);
-    }
-}
-function tick() {
-    schedule_update();
-    return resolved_promise;
-}
-function add_render_callback(fn) {
-    render_callbacks.push(fn);
-}
-// flush() calls callbacks in this order:
-// 1. All beforeUpdate callbacks, in order: parents before children
-// 2. All bind:this callbacks, in reverse order: children before parents.
-// 3. All afterUpdate callbacks, in order: parents before children. EXCEPT
-//    for afterUpdates called during the initial onMount, which are called in
-//    reverse order: children before parents.
-// Since callbacks might update component values, which could trigger another
-// call to flush(), the following steps guard against this:
-// 1. During beforeUpdate, any updated components will be added to the
-//    dirty_components array and will cause a reentrant call to flush(). Because
-//    the flush index is kept outside the function, the reentrant call will pick
-//    up where the earlier call left off and go through all dirty components. The
-//    current_component value is saved and restored so that the reentrant call will
-//    not interfere with the "parent" flush() call.
-// 2. bind:this callbacks cannot trigger new flush() calls.
-// 3. During afterUpdate, any updated components will NOT have their afterUpdate
-//    callback called a second time; the seen_callbacks set, outside the flush()
-//    function, guarantees this behavior.
-const seen_callbacks = new Set();
-let flushidx = 0; // Do *not* move this inside the flush() function
-function flush() {
-    // Do not reenter flush while dirty components are updated, as this can
-    // result in an infinite loop. Instead, let the inner flush handle it.
-    // Reentrancy is ok afterwards for bindings etc.
-    if (flushidx !== 0) {
-        return;
-    }
-    const saved_component = current_component;
-    do {
-        // first, call beforeUpdate functions
-        // and update components
-        try {
-            while (flushidx < dirty_components.length) {
-                const component = dirty_components[flushidx];
-                flushidx++;
-                set_current_component(component);
-                update(component.$$);
-            }
-        }
-        catch (e) {
-            // reset dirty state to not end up in a deadlocked state and then rethrow
-            dirty_components.length = 0;
-            flushidx = 0;
-            throw e;
-        }
-        set_current_component(null);
-        dirty_components.length = 0;
-        flushidx = 0;
-        while (binding_callbacks.length)
-            binding_callbacks.pop()();
-        // then, once components are updated, call
-        // afterUpdate functions. This may cause
-        // subsequent updates...
-        for (let i = 0; i < render_callbacks.length; i += 1) {
-            const callback = render_callbacks[i];
-            if (!seen_callbacks.has(callback)) {
-                // ...so guard against infinite loops
-                seen_callbacks.add(callback);
-                callback();
-            }
-        }
-        render_callbacks.length = 0;
-    } while (dirty_components.length);
-    while (flush_callbacks.length) {
-        flush_callbacks.pop()();
-    }
-    update_scheduled = false;
-    seen_callbacks.clear();
-    set_current_component(saved_component);
-}
-function update($$) {
-    if ($$.fragment !== null) {
-        $$.update();
-        run_all($$.before_update);
-        const dirty = $$.dirty;
-        $$.dirty = [-1];
-        $$.fragment && $$.fragment.p($$.ctx, dirty);
-        $$.after_update.forEach(add_render_callback);
-    }
-}
-/**
- * Useful for example to execute remaining `afterUpdate` callbacks before executing `destroy`.
- */
-function flush_render_callbacks(fns) {
-    const filtered = [];
-    const targets = [];
-    render_callbacks.forEach((c) => fns.indexOf(c) === -1 ? filtered.push(c) : targets.push(c));
-    targets.forEach((c) => c());
-    render_callbacks = filtered;
-}
-const outroing = new Set();
-let outros;
-function group_outros() {
-    outros = {
-        r: 0,
-        c: [],
-        p: outros // parent group
-    };
-}
-function check_outros() {
-    if (!outros.r) {
-        run_all(outros.c);
-    }
-    outros = outros.p;
-}
-function transition_in(block, local) {
-    if (block && block.i) {
-        outroing.delete(block);
-        block.i(local);
-    }
-}
-function transition_out(block, local, detach, callback) {
-    if (block && block.o) {
-        if (outroing.has(block))
-            return;
-        outroing.add(block);
-        outros.c.push(() => {
-            outroing.delete(block);
-            if (callback) {
-                if (detach)
-                    block.d(1);
-                callback();
-            }
-        });
-        block.o(local);
-    }
-    else if (callback) {
-        callback();
-    }
-}
-function create_component(block) {
-    block && block.c();
-}
-function mount_component(component, target, anchor, customElement) {
-    const { fragment, after_update } = component.$$;
-    fragment && fragment.m(target, anchor);
-    if (!customElement) {
-        // onMount happens before the initial afterUpdate
-        add_render_callback(() => {
-            const new_on_destroy = component.$$.on_mount.map(run).filter(is_function);
-            // if the component was destroyed immediately
-            // it will update the `$$.on_destroy` reference to `null`.
-            // the destructured on_destroy may still reference to the old array
-            if (component.$$.on_destroy) {
-                component.$$.on_destroy.push(...new_on_destroy);
-            }
-            else {
-                // Edge case - component was destroyed immediately,
-                // most likely as a result of a binding initialising
-                run_all(new_on_destroy);
-            }
-            component.$$.on_mount = [];
-        });
-    }
-    after_update.forEach(add_render_callback);
-}
-function destroy_component(component, detaching) {
-    const $$ = component.$$;
-    if ($$.fragment !== null) {
-        flush_render_callbacks($$.after_update);
-        run_all($$.on_destroy);
-        $$.fragment && $$.fragment.d(detaching);
-        // TODO null out other refs, including component.$$ (but need to
-        // preserve final state?)
-        $$.on_destroy = $$.fragment = null;
-        $$.ctx = [];
-    }
-}
-function make_dirty(component, i) {
-    if (component.$$.dirty[0] === -1) {
-        dirty_components.push(component);
-        schedule_update();
-        component.$$.dirty.fill(0);
-    }
-    component.$$.dirty[(i / 31) | 0] |= (1 << (i % 31));
-}
-function init(component, options, instance, create_fragment, not_equal, props, append_styles, dirty = [-1]) {
-    const parent_component = current_component;
-    set_current_component(component);
-    const $$ = component.$$ = {
-        fragment: null,
-        ctx: [],
-        // state
-        props,
-        update: noop$1,
-        not_equal,
-        bound: blank_object(),
-        // lifecycle
-        on_mount: [],
-        on_destroy: [],
-        on_disconnect: [],
-        before_update: [],
-        after_update: [],
-        context: new Map(options.context || (parent_component ? parent_component.$$.context : [])),
-        // everything else
-        callbacks: blank_object(),
-        dirty,
-        skip_bound: false,
-        root: options.target || parent_component.$$.root
-    };
-    append_styles && append_styles($$.root);
-    let ready = false;
-    $$.ctx = instance
-        ? instance(component, options.props || {}, (i, ret, ...rest) => {
-            const value = rest.length ? rest[0] : ret;
-            if ($$.ctx && not_equal($$.ctx[i], $$.ctx[i] = value)) {
-                if (!$$.skip_bound && $$.bound[i])
-                    $$.bound[i](value);
-                if (ready)
-                    make_dirty(component, i);
-            }
-            return ret;
-        })
-        : [];
-    $$.update();
-    ready = true;
-    run_all($$.before_update);
-    // `false` as a special case of no DOM component
-    $$.fragment = create_fragment ? create_fragment($$.ctx) : false;
-    if (options.target) {
-        if (options.hydrate) {
-            const nodes = children(options.target);
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            $$.fragment && $$.fragment.l(nodes);
-            nodes.forEach(detach);
-        }
-        else {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            $$.fragment && $$.fragment.c();
-        }
-        if (options.intro)
-            transition_in(component.$$.fragment);
-        mount_component(component, options.target, options.anchor, options.customElement);
-        flush();
-    }
-    set_current_component(parent_component);
-}
-/**
- * Base class for Svelte components. Used when dev=false.
- */
-class SvelteComponent {
-    $destroy() {
-        destroy_component(this, 1);
-        this.$destroy = noop$1;
-    }
-    $on(type, callback) {
-        if (!is_function(callback)) {
-            return noop$1;
-        }
-        const callbacks = (this.$$.callbacks[type] || (this.$$.callbacks[type] = []));
-        callbacks.push(callback);
-        return () => {
-            const index = callbacks.indexOf(callback);
-            if (index !== -1)
-                callbacks.splice(index, 1);
-        };
-    }
-    $set($$props) {
-        if (this.$$set && !is_empty($$props)) {
-            this.$$.skip_bound = true;
-            this.$$set($$props);
-            this.$$.skip_bound = false;
-        }
-    }
+// generated during release, do not modify
+
+const PUBLIC_VERSION = '5';
+
+if (typeof window !== 'undefined') {
+	// @ts-expect-error
+	((window.__svelte ??= {}).v ??= new Set()).add(PUBLIC_VERSION);
 }
 
 function pick(obj, keys) {
@@ -431,79 +3828,6 @@ function nbChars(strArray) {
     console.log(strArray, strArray.reduce((acc, str) => acc + str.length, 0));
     return strArray.reduce((acc, str) => acc + str.length, 0);
 }
-
-function ascending$1(a, b) {
-  return a == null || b == null ? NaN : a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
-}
-
-function descending(a, b) {
-  return a == null || b == null ? NaN
-    : b < a ? -1
-    : b > a ? 1
-    : b >= a ? 0
-    : NaN;
-}
-
-function bisector(f) {
-  let compare1, compare2, delta;
-
-  // If an accessor is specified, promote it to a comparator. In this case we
-  // can test whether the search value is (self-) comparable. We can’t do this
-  // for a comparator (except for specific, known comparators) because we can’t
-  // tell if the comparator is symmetric, and an asymmetric comparator can’t be
-  // used to test whether a single value is comparable.
-  if (f.length !== 2) {
-    compare1 = ascending$1;
-    compare2 = (d, x) => ascending$1(f(d), x);
-    delta = (d, x) => f(d) - x;
-  } else {
-    compare1 = f === ascending$1 || f === descending ? f : zero;
-    compare2 = f;
-    delta = f;
-  }
-
-  function left(a, x, lo = 0, hi = a.length) {
-    if (lo < hi) {
-      if (compare1(x, x) !== 0) return hi;
-      do {
-        const mid = (lo + hi) >>> 1;
-        if (compare2(a[mid], x) < 0) lo = mid + 1;
-        else hi = mid;
-      } while (lo < hi);
-    }
-    return lo;
-  }
-
-  function right(a, x, lo = 0, hi = a.length) {
-    if (lo < hi) {
-      if (compare1(x, x) !== 0) return hi;
-      do {
-        const mid = (lo + hi) >>> 1;
-        if (compare2(a[mid], x) <= 0) lo = mid + 1;
-        else hi = mid;
-      } while (lo < hi);
-    }
-    return lo;
-  }
-
-  function center(a, x, lo = 0, hi = a.length) {
-    const i = left(a, x, lo, hi - 1);
-    return i > lo && delta(a[i - 1], x) > -delta(a[i], x) ? i - 1 : i;
-  }
-
-  return {left, center, right};
-}
-
-function zero() {
-  return 0;
-}
-
-function number(x) {
-  return x === null ? NaN : +x;
-}
-
-bisector(ascending$1);
-bisector(number).center;
 
 function count(values, valueof) {
   let count = 0;
@@ -1956,49 +5280,34 @@ var Picker = function () {
     return Picker;
 }();
 
-/* src/components/ColorPicker.svelte generated by Svelte v3.59.2 */
+var root$1 = from_html(`<div class="picker"></div>`);
 
-function create_fragment$1(ctx) {
-	let div;
+function ColorPicker($$anchor, $$props) {
+	push($$props, true);
 
-	return {
-		c() {
-			div = element("div");
-			attr(div, "class", "picker");
-		},
-		m(target, anchor) {
-			insert(target, div, anchor);
-			/*div_binding*/ ctx[6](div);
-		},
-		p: noop$1,
-		i: noop$1,
-		o: noop$1,
-		d(detaching) {
-			if (detaching) detach(div);
-			/*div_binding*/ ctx[6](null);
+	// Props
+	let value = prop($$props, 'value', 15, "#AAAAAAFF"),
+		options = prop($$props, 'options', 19, () => ({})),
+		onChange = prop($$props, 'onChange', 3, () => {});
+
+	// State
+	let self = state(void 0);
+	let pickerElem = state(void 0);
+
+	user_effect(() => {
+		if (get(pickerElem)) {
+			get(pickerElem).setColor(value());
 		}
-	};
-}
-
-function instance$1($$self, $$props, $$invalidate) {
-	let { value = "#AAAAAAFF" } = $$props;
-	let { options = {} } = $$props;
-
-	let { onChange = () => {
-		
-	} } = $$props;
-
-	let self;
-	let pickerElem;
+	});
 
 	function setColor(rgbaString) {
-		pickerElem.setColor(rgbaString);
+		get(pickerElem).setColor(rgbaString);
 	}
 
 	function setValue(val) {
-		if (val === value) return;
-		onChange(val, value);
-		$$invalidate(1, value = val);
+		if (val === value()) return;
+		onChange()(val, value());
+		value(val);
 	}
 
 	function _onChange(color) {
@@ -2006,68 +5315,38 @@ function instance$1($$self, $$props, $$invalidate) {
 	}
 
 	onMount(() => {
-		init(options);
+		init(options());
 	});
 
 	onDestroy(() => {
-		pickerElem.destroy();
+		get(pickerElem)?.destroy();
 	});
 
 	function init(opts) {
-		if (!self) return;
-		if (pickerElem) pickerElem.destroy();
+		if (!get(self)) return;
+		if (get(pickerElem)) get(pickerElem).destroy();
 		opts.onChange = _onChange;
 
-		$$invalidate(5, pickerElem = new Picker({
-				parent: self,
-				color: value,
+		set(
+			pickerElem,
+			new Picker({
+				parent: get(self),
+				color: value(),
 				popup: false,
 				...opts
-			}));
+			}),
+			true
+		);
 
-		pickerElem.show();
-		pickerElem.openHandler();
+		get(pickerElem).show();
+		get(pickerElem).openHandler();
 	}
 
-	function div_binding($$value) {
-		binding_callbacks[$$value ? 'unshift' : 'push'](() => {
-			self = $$value;
-			$$invalidate(0, self);
-		});
-	}
+	var div = root$1();
 
-	$$self.$$set = $$props => {
-		if ('value' in $$props) $$invalidate(1, value = $$props.value);
-		if ('options' in $$props) $$invalidate(2, options = $$props.options);
-		if ('onChange' in $$props) $$invalidate(3, onChange = $$props.onChange);
-	};
-
-	$$self.$$.update = () => {
-		if ($$self.$$.dirty & /*pickerElem, value*/ 34) {
-			if (pickerElem) {
-				pickerElem.setColor(value);
-			}
-		}
-	};
-
-	return [self, value, options, onChange, setColor, pickerElem, div_binding];
-}
-
-class ColorPicker extends SvelteComponent {
-	constructor(options) {
-		super();
-
-		init(this, options, instance$1, create_fragment$1, safe_not_equal, {
-			value: 1,
-			options: 2,
-			onChange: 3,
-			setColor: 4
-		});
-	}
-
-	get setColor() {
-		return this.$$.ctx[4];
-	}
+	bind_this(div, ($$value) => set(self, $$value), () => get(self));
+	append($$anchor, div);
+	return pop({ setColor });
 }
 
 // https://stackoverflow.com/a/3368855
@@ -2157,1608 +5436,62 @@ function listFonts() {
     return [...new Set(arr)];
 }
 
-/* src/components/InlineStyleEditor.svelte generated by Svelte v3.59.2 */
-
-function get_each_context(ctx, list, i) {
-	const child_ctx = ctx.slice();
-	child_ctx[69] = list[i];
-	child_ctx[71] = list;
-	child_ctx[72] = i;
-	const constants_0 = /*choices*/ child_ctx[69].props[/*choices*/ child_ctx[69].selected];
-	child_ctx[70] = constants_0;
-	return child_ctx;
+function bringToFront(
+	__1,
+	bringableToFront,
+	selectedElemIndex,
+	currentElement,
+	onStyleChanged,
+	currentRule
+) {
+	get(bringableToFront)[get(selectedElemIndex)] = false;
+	get(currentElement).parentNode.appendChild(get(currentElement));
+	onStyleChanged(get(currentElement), get(currentRule), "bringtofront", null);
 }
 
-function get_each_context_1(ctx, list, i) {
-	const child_ctx = ctx.slice();
-	child_ctx[73] = list[i];
-	return child_ctx;
+function deleteElem(__2, currentElement, close) {
+	get(currentElement).remove();
+	close();
 }
 
-function get_if_ctx(ctx) {
-	const child_ctx = ctx.slice();
-	const constants_0 = /*allCurrentPropDefs*/ child_ctx[16][/*selectedName*/ child_ctx[70]].choices();
-	child_ctx[69] = constants_0;
-	return child_ctx;
-}
-
-function get_each_context_2(ctx, list, i) {
-	const child_ctx = ctx.slice();
-	child_ctx[76] = list[i];
-	child_ctx[78] = i;
-	return child_ctx;
-}
-
-function get_each_context_3(ctx, list, i) {
-	const child_ctx = ctx.slice();
-	child_ctx[79] = list[i];
-	child_ctx[81] = i;
-	return child_ctx;
-}
-
-function get_each_context_5(ctx, list, i) {
-	const child_ctx = ctx.slice();
-	child_ctx[82] = list[i];
-	child_ctx[84] = i;
-	return child_ctx;
-}
-
-function get_each_context_4(ctx, list, i) {
-	const child_ctx = ctx.slice();
-	child_ctx[82] = list[i];
-	child_ctx[84] = i;
-	return child_ctx;
-}
-
-function get_each_context_6(ctx, list, i) {
-	const child_ctx = ctx.slice();
-	child_ctx[86] = list[i][0];
-	child_ctx[87] = list[i][1];
-	child_ctx[89] = i;
-	return child_ctx;
-}
-
-// (473:4) {#if targetsToSearch.length > 1}
-function create_if_block_11(ctx) {
-	let div;
-	let b;
-	let t1;
-	let each_value_6 = /*targetsToSearch*/ ctx[3];
-	let each_blocks = [];
-
-	for (let i = 0; i < each_value_6.length; i += 1) {
-		each_blocks[i] = create_each_block_6(get_each_context_6(ctx, each_value_6, i));
-	}
-
-	return {
-		c() {
-			div = element("div");
-			b = element("b");
-			b.textContent = "Element";
-			t1 = space();
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].c();
-			}
-
-			attr(div, "class", "select-tab");
-		},
-		m(target, anchor) {
-			insert(target, div, anchor);
-			append(div, b);
-			append(div, t1);
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				if (each_blocks[i]) {
-					each_blocks[i].m(div, null);
-				}
-			}
-		},
-		p(ctx, dirty) {
-			if (dirty[0] & /*selectedElemIndex, selectedRuleIndex, targetsToSearch*/ 200) {
-				each_value_6 = /*targetsToSearch*/ ctx[3];
-				let i;
-
-				for (i = 0; i < each_value_6.length; i += 1) {
-					const child_ctx = get_each_context_6(ctx, each_value_6, i);
-
-					if (each_blocks[i]) {
-						each_blocks[i].p(child_ctx, dirty);
-					} else {
-						each_blocks[i] = create_each_block_6(child_ctx);
-						each_blocks[i].c();
-						each_blocks[i].m(div, null);
-					}
-				}
-
-				for (; i < each_blocks.length; i += 1) {
-					each_blocks[i].d(1);
-				}
-
-				each_blocks.length = each_value_6.length;
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(div);
-			destroy_each(each_blocks, detaching);
-		}
-	};
-}
-
-// (476:12) {#each targetsToSearch as [_, name], elemIndex}
-function create_each_block_6(ctx) {
-	let span;
-	let t0_value = /*name*/ ctx[87] + "";
-	let t0;
-	let t1;
-	let mounted;
-	let dispose;
-
-	function click_handler() {
-		return /*click_handler*/ ctx[39](/*elemIndex*/ ctx[89]);
-	}
-
-	return {
-		c() {
-			span = element("span");
-			t0 = text(t0_value);
-			t1 = space();
-			toggle_class(span, "selected", /*selectedElemIndex*/ ctx[6] === /*elemIndex*/ ctx[89]);
-		},
-		m(target, anchor) {
-			insert(target, span, anchor);
-			append(span, t0);
-			append(span, t1);
-
-			if (!mounted) {
-				dispose = listen(span, "click", click_handler);
-				mounted = true;
-			}
-		},
-		p(new_ctx, dirty) {
-			ctx = new_ctx;
-			if (dirty[0] & /*targetsToSearch*/ 8 && t0_value !== (t0_value = /*name*/ ctx[87] + "")) set_data(t0, t0_value);
-
-			if (dirty[0] & /*selectedElemIndex*/ 64) {
-				toggle_class(span, "selected", /*selectedElemIndex*/ ctx[6] === /*elemIndex*/ ctx[89]);
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(span);
-			mounted = false;
-			dispose();
-		}
-	};
-}
-
-// (499:8) {:else}
-function create_else_block_2(ctx) {
-	let each_1_anchor;
-	let each_value_5 = getRuleNames(/*allRules*/ ctx[4][/*selectedElemIndex*/ ctx[6]]);
-	let each_blocks = [];
-
-	for (let i = 0; i < each_value_5.length; i += 1) {
-		each_blocks[i] = create_each_block_5(get_each_context_5(ctx, each_value_5, i));
-	}
-
-	return {
-		c() {
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].c();
-			}
-
-			each_1_anchor = empty();
-		},
-		m(target, anchor) {
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				if (each_blocks[i]) {
-					each_blocks[i].m(target, anchor);
-				}
-			}
-
-			insert(target, each_1_anchor, anchor);
-		},
-		p(ctx, dirty) {
-			if (dirty[0] & /*allRules, selectedElemIndex, selectedRuleIndex, selectRule, getCssRuleName, clickedElement*/ 134218450) {
-				each_value_5 = getRuleNames(/*allRules*/ ctx[4][/*selectedElemIndex*/ ctx[6]]);
-				let i;
-
-				for (i = 0; i < each_value_5.length; i += 1) {
-					const child_ctx = get_each_context_5(ctx, each_value_5, i);
-
-					if (each_blocks[i]) {
-						each_blocks[i].p(child_ctx, dirty);
-					} else {
-						each_blocks[i] = create_each_block_5(child_ctx);
-						each_blocks[i].c();
-						each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
-					}
-				}
-
-				for (; i < each_blocks.length; i += 1) {
-					each_blocks[i].d(1);
-				}
-
-				each_blocks.length = each_value_5.length;
-			}
-		},
-		d(detaching) {
-			destroy_each(each_blocks, detaching);
-			if (detaching) detach(each_1_anchor);
-		}
-	};
-}
-
-// (491:8) {#if nbChars(getRuleNamesTransformed(allRules[selectedElemIndex])) > 30}
-function create_if_block_10(ctx) {
-	let select;
-	let mounted;
-	let dispose;
-	let each_value_4 = getRuleNames(/*allRules*/ ctx[4][/*selectedElemIndex*/ ctx[6]]);
-	let each_blocks = [];
-
-	for (let i = 0; i < each_value_4.length; i += 1) {
-		each_blocks[i] = create_each_block_4(get_each_context_4(ctx, each_value_4, i));
-	}
-
-	return {
-		c() {
-			select = element("select");
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].c();
-			}
-		},
-		m(target, anchor) {
-			insert(target, select, anchor);
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				if (each_blocks[i]) {
-					each_blocks[i].m(select, null);
-				}
-			}
-
-			if (!mounted) {
-				dispose = listen(select, "change", /*change_handler*/ ctx[40]);
-				mounted = true;
-			}
-		},
-		p(ctx, dirty) {
-			if (dirty[0] & /*selectedRuleIndex, getCssRuleName, allRules, selectedElemIndex, clickedElement*/ 722) {
-				each_value_4 = getRuleNames(/*allRules*/ ctx[4][/*selectedElemIndex*/ ctx[6]]);
-				let i;
-
-				for (i = 0; i < each_value_4.length; i += 1) {
-					const child_ctx = get_each_context_4(ctx, each_value_4, i);
-
-					if (each_blocks[i]) {
-						each_blocks[i].p(child_ctx, dirty);
-					} else {
-						each_blocks[i] = create_each_block_4(child_ctx);
-						each_blocks[i].c();
-						each_blocks[i].m(select, null);
-					}
-				}
-
-				for (; i < each_blocks.length; i += 1) {
-					each_blocks[i].d(1);
-				}
-
-				each_blocks.length = each_value_4.length;
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(select);
-			destroy_each(each_blocks, detaching);
-			mounted = false;
-			dispose();
-		}
-	};
-}
-
-// (500:12) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
-function create_each_block_5(ctx) {
-	let span;
-	let t_value = /*getCssRuleName*/ ctx[1](/*ruleName*/ ctx[82], /*clickedElement*/ ctx[9]) + "";
-	let t;
-	let span_title_value;
-	let mounted;
-	let dispose;
-
-	function click_handler_1() {
-		return /*click_handler_1*/ ctx[41](/*ruleIndex*/ ctx[84]);
-	}
-
-	return {
-		c() {
-			span = element("span");
-			t = text(t_value);
-			attr(span, "title", span_title_value = /*ruleName*/ ctx[82]);
-			toggle_class(span, "selected", /*selectedRuleIndex*/ ctx[7] === /*ruleIndex*/ ctx[84]);
-		},
-		m(target, anchor) {
-			insert(target, span, anchor);
-			append(span, t);
-
-			if (!mounted) {
-				dispose = listen(span, "click", click_handler_1);
-				mounted = true;
-			}
-		},
-		p(new_ctx, dirty) {
-			ctx = new_ctx;
-			if (dirty[0] & /*getCssRuleName, allRules, selectedElemIndex, clickedElement*/ 594 && t_value !== (t_value = /*getCssRuleName*/ ctx[1](/*ruleName*/ ctx[82], /*clickedElement*/ ctx[9]) + "")) set_data(t, t_value);
-
-			if (dirty[0] & /*allRules, selectedElemIndex*/ 80 && span_title_value !== (span_title_value = /*ruleName*/ ctx[82])) {
-				attr(span, "title", span_title_value);
-			}
-
-			if (dirty[0] & /*selectedRuleIndex*/ 128) {
-				toggle_class(span, "selected", /*selectedRuleIndex*/ ctx[7] === /*ruleIndex*/ ctx[84]);
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(span);
-			mounted = false;
-			dispose();
-		}
-	};
-}
-
-// (493:16) {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
-function create_each_block_4(ctx) {
-	let option;
-	let t_value = /*getCssRuleName*/ ctx[1](/*ruleName*/ ctx[82], /*clickedElement*/ ctx[9]) + "";
-	let t;
-	let option_selected_value;
-
-	return {
-		c() {
-			option = element("option");
-			t = text(t_value);
-			option.selected = option_selected_value = /*selectedRuleIndex*/ ctx[7] === /*ruleIndex*/ ctx[84];
-			option.__value = /*ruleIndex*/ ctx[84];
-			option.value = option.__value;
-		},
-		m(target, anchor) {
-			insert(target, option, anchor);
-			append(option, t);
-		},
-		p(ctx, dirty) {
-			if (dirty[0] & /*getCssRuleName, allRules, selectedElemIndex, clickedElement*/ 594 && t_value !== (t_value = /*getCssRuleName*/ ctx[1](/*ruleName*/ ctx[82], /*clickedElement*/ ctx[9]) + "")) set_data(t, t_value);
-
-			if (dirty[0] & /*selectedRuleIndex*/ 128 && option_selected_value !== (option_selected_value = /*selectedRuleIndex*/ ctx[7] === /*ruleIndex*/ ctx[84])) {
-				option.selected = option_selected_value;
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(option);
-		}
-	};
-}
-
-// (517:12) {#if type !== "custom" || (currentRule === "inline" && type === "custom" && hasDisplayedCustom)}
-function create_if_block_9(ctx) {
-	let span;
-
-	let t0_value = (/*type*/ ctx[79] === "stroke"
-	? "SVG paint"
-	: capitalizeFirstLetter(/*type*/ ctx[79])) + "";
-
-	let t0;
-	let t1;
-	let mounted;
-	let dispose;
-
-	function click_handler_2() {
-		return /*click_handler_2*/ ctx[42](/*typeIndex*/ ctx[81]);
-	}
-
-	return {
-		c() {
-			span = element("span");
-			t0 = text(t0_value);
-			t1 = space();
-			toggle_class(span, "selected", /*selectedTypeIndex*/ ctx[8] === /*typeIndex*/ ctx[81]);
-		},
-		m(target, anchor) {
-			insert(target, span, anchor);
-			append(span, t0);
-			append(span, t1);
-
-			if (!mounted) {
-				dispose = listen(span, "click", click_handler_2);
-				mounted = true;
-			}
-		},
-		p(new_ctx, dirty) {
-			ctx = new_ctx;
-
-			if (dirty[0] & /*allTypes, selectedElemIndex*/ 96 && t0_value !== (t0_value = (/*type*/ ctx[79] === "stroke"
-			? "SVG paint"
-			: capitalizeFirstLetter(/*type*/ ctx[79])) + "")) set_data(t0, t0_value);
-
-			if (dirty[0] & /*selectedTypeIndex*/ 256) {
-				toggle_class(span, "selected", /*selectedTypeIndex*/ ctx[8] === /*typeIndex*/ ctx[81]);
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(span);
-			mounted = false;
-			dispose();
-		}
-	};
-}
-
-// (515:8) {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
-function create_each_block_3(ctx) {
-	let if_block_anchor;
-	let if_block = (/*type*/ ctx[79] !== "custom" || /*currentRule*/ ctx[19] === "inline" && /*type*/ ctx[79] === "custom" && /*hasDisplayedCustom*/ ctx[18]) && create_if_block_9(ctx);
-
-	return {
-		c() {
-			if (if_block) if_block.c();
-			if_block_anchor = empty();
-		},
-		m(target, anchor) {
-			if (if_block) if_block.m(target, anchor);
-			insert(target, if_block_anchor, anchor);
-		},
-		p(ctx, dirty) {
-			if (/*type*/ ctx[79] !== "custom" || /*currentRule*/ ctx[19] === "inline" && /*type*/ ctx[79] === "custom" && /*hasDisplayedCustom*/ ctx[18]) {
-				if (if_block) {
-					if_block.p(ctx, dirty);
-				} else {
-					if_block = create_if_block_9(ctx);
-					if_block.c();
-					if_block.m(if_block_anchor.parentNode, if_block_anchor);
-				}
-			} else if (if_block) {
-				if_block.d(1);
-				if_block = null;
-			}
-		},
-		d(detaching) {
-			if (if_block) if_block.d(detaching);
-			if (detaching) detach(if_block_anchor);
-		}
-	};
-}
-
-// (529:4) {#if allTypes[selectedElemIndex]}
-function create_if_block(ctx) {
-	let div;
-	let t0;
-	let t1;
-	let show_if = /*currentRule*/ ctx[19] === "inline" && /*inlineDeletable*/ ctx[0](/*currentElement*/ ctx[20]);
-	let current;
-	let each_value = /*propsByType*/ ctx[15];
-	let each_blocks = [];
-
-	for (let i = 0; i < each_value.length; i += 1) {
-		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
-	}
-
-	const out = i => transition_out(each_blocks[i], 1, 1, () => {
-		each_blocks[i] = null;
-	});
-
-	let if_block0 = /*currentRule*/ ctx[19] === "inline" && /*bringableToFront*/ ctx[17][/*selectedElemIndex*/ ctx[6]] !== null && create_if_block_2(ctx);
-	let if_block1 = show_if && create_if_block_1(ctx);
-
-	return {
-		c() {
-			div = element("div");
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].c();
-			}
-
-			t0 = space();
-			if (if_block0) if_block0.c();
-			t1 = space();
-			if (if_block1) if_block1.c();
-			attr(div, "class", "editor");
-		},
-		m(target, anchor) {
-			insert(target, div, anchor);
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				if (each_blocks[i]) {
-					each_blocks[i].m(div, null);
-				}
-			}
-
-			append(div, t0);
-			if (if_block0) if_block0.m(div, null);
-			append(div, t1);
-			if (if_block1) if_block1.m(div, null);
-			current = true;
-		},
-		p(ctx, dirty) {
-			if (dirty[0] & /*propsByType, allCurrentPropDefs, updateProp, deleteProp*/ 75595776) {
-				each_value = /*propsByType*/ ctx[15];
-				let i;
-
-				for (i = 0; i < each_value.length; i += 1) {
-					const child_ctx = get_each_context(ctx, each_value, i);
-
-					if (each_blocks[i]) {
-						each_blocks[i].p(child_ctx, dirty);
-						transition_in(each_blocks[i], 1);
-					} else {
-						each_blocks[i] = create_each_block(child_ctx);
-						each_blocks[i].c();
-						transition_in(each_blocks[i], 1);
-						each_blocks[i].m(div, t0);
-					}
-				}
-
-				group_outros();
-
-				for (i = each_value.length; i < each_blocks.length; i += 1) {
-					out(i);
-				}
-
-				check_outros();
-			}
-
-			if (/*currentRule*/ ctx[19] === "inline" && /*bringableToFront*/ ctx[17][/*selectedElemIndex*/ ctx[6]] !== null) {
-				if (if_block0) {
-					if_block0.p(ctx, dirty);
-				} else {
-					if_block0 = create_if_block_2(ctx);
-					if_block0.c();
-					if_block0.m(div, t1);
-				}
-			} else if (if_block0) {
-				if_block0.d(1);
-				if_block0 = null;
-			}
-
-			if (dirty[0] & /*currentRule, inlineDeletable, currentElement*/ 1572865) show_if = /*currentRule*/ ctx[19] === "inline" && /*inlineDeletable*/ ctx[0](/*currentElement*/ ctx[20]);
-
-			if (show_if) {
-				if (if_block1) {
-					if_block1.p(ctx, dirty);
-				} else {
-					if_block1 = create_if_block_1(ctx);
-					if_block1.c();
-					if_block1.m(div, null);
-				}
-			} else if (if_block1) {
-				if_block1.d(1);
-				if_block1 = null;
-			}
-		},
-		i(local) {
-			if (current) return;
-
-			for (let i = 0; i < each_value.length; i += 1) {
-				transition_in(each_blocks[i]);
-			}
-
-			current = true;
-		},
-		o(local) {
-			each_blocks = each_blocks.filter(Boolean);
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				transition_out(each_blocks[i]);
-			}
-
-			current = false;
-		},
-		d(detaching) {
-			if (detaching) detach(div);
-			destroy_each(each_blocks, detaching);
-			if (if_block0) if_block0.d();
-			if (if_block1) if_block1.d();
-		}
-	};
-}
-
-// (552:24) {:else}
-function create_else_block_1(ctx) {
-	let span;
-	let t_value = pascalCaseToSentence(/*selectedName*/ ctx[70]) + "";
-	let t;
-
-	return {
-		c() {
-			span = element("span");
-			t = text(t_value);
-		},
-		m(target, anchor) {
-			insert(target, span, anchor);
-			append(span, t);
-		},
-		p(ctx, dirty) {
-			if (dirty[0] & /*propsByType*/ 32768 && t_value !== (t_value = pascalCaseToSentence(/*selectedName*/ ctx[70]) + "")) set_data(t, t_value);
-		},
-		d(detaching) {
-			if (detaching) detach(span);
-		}
-	};
-}
-
-// (535:24) {#if choices.props.length > 1}
-function create_if_block_7(ctx) {
-	let select;
-	let mounted;
-	let dispose;
-	let each_value_2 = /*choices*/ ctx[69].props;
-	let each_blocks = [];
-
-	for (let i = 0; i < each_value_2.length; i += 1) {
-		each_blocks[i] = create_each_block_2(get_each_context_2(ctx, each_value_2, i));
-	}
-
-	function change_handler_1(...args) {
-		return /*change_handler_1*/ ctx[43](/*choices*/ ctx[69], /*each_value*/ ctx[71], /*choices_index*/ ctx[72], ...args);
-	}
-
-	return {
-		c() {
-			select = element("select");
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].c();
-			}
-		},
-		m(target, anchor) {
-			insert(target, select, anchor);
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				if (each_blocks[i]) {
-					each_blocks[i].m(select, null);
-				}
-			}
-
-			if (!mounted) {
-				dispose = listen(select, "change", change_handler_1);
-				mounted = true;
-			}
-		},
-		p(new_ctx, dirty) {
-			ctx = new_ctx;
-
-			if (dirty[0] & /*propsByType*/ 32768) {
-				each_value_2 = /*choices*/ ctx[69].props;
-				let i;
-
-				for (i = 0; i < each_value_2.length; i += 1) {
-					const child_ctx = get_each_context_2(ctx, each_value_2, i);
-
-					if (each_blocks[i]) {
-						each_blocks[i].p(child_ctx, dirty);
-					} else {
-						each_blocks[i] = create_each_block_2(child_ctx);
-						each_blocks[i].c();
-						each_blocks[i].m(select, null);
-					}
-				}
-
-				for (; i < each_blocks.length; i += 1) {
-					each_blocks[i].d(1);
-				}
-
-				each_blocks.length = each_value_2.length;
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(select);
-			destroy_each(each_blocks, detaching);
-			mounted = false;
-			dispose();
-		}
-	};
-}
-
-// (546:40) {:else}
-function create_else_block(ctx) {
-	let t_value = pascalCaseToSentence(/*propName*/ ctx[76]) + "";
-	let t;
-
-	return {
-		c() {
-			t = text(t_value);
-		},
-		m(target, anchor) {
-			insert(target, t, anchor);
-		},
-		p(ctx, dirty) {
-			if (dirty[0] & /*propsByType*/ 32768 && t_value !== (t_value = pascalCaseToSentence(/*propName*/ ctx[76]) + "")) set_data(t, t_value);
-		},
-		d(detaching) {
-			if (detaching) detach(t);
-		}
-	};
-}
-
-// (544:40) {#if choices.type === "color"}
-function create_if_block_8(ctx) {
-	let t0_value = capitalizeFirstLetter(/*propName*/ ctx[76]) + "";
-	let t0;
-	let t1;
-
-	return {
-		c() {
-			t0 = text(t0_value);
-			t1 = text(" color");
-		},
-		m(target, anchor) {
-			insert(target, t0, anchor);
-			insert(target, t1, anchor);
-		},
-		p(ctx, dirty) {
-			if (dirty[0] & /*propsByType*/ 32768 && t0_value !== (t0_value = capitalizeFirstLetter(/*propName*/ ctx[76]) + "")) set_data(t0, t0_value);
-		},
-		d(detaching) {
-			if (detaching) detach(t0);
-			if (detaching) detach(t1);
-		}
-	};
-}
-
-// (542:32) {#each choices.props as propName, i}
-function create_each_block_2(ctx) {
-	let option;
-	let t;
-	let option_selected_value;
-
-	function select_block_type_2(ctx, dirty) {
-		if (/*choices*/ ctx[69].type === "color") return create_if_block_8;
-		return create_else_block;
-	}
-
-	let current_block_type = select_block_type_2(ctx);
-	let if_block = current_block_type(ctx);
-
-	return {
-		c() {
-			option = element("option");
-			if_block.c();
-			t = space();
-			option.selected = option_selected_value = /*i*/ ctx[78] === /*choices*/ ctx[69].selected;
-			option.__value = /*i*/ ctx[78];
-			option.value = option.__value;
-		},
-		m(target, anchor) {
-			insert(target, option, anchor);
-			if_block.m(option, null);
-			append(option, t);
-		},
-		p(ctx, dirty) {
-			if (current_block_type === (current_block_type = select_block_type_2(ctx)) && if_block) {
-				if_block.p(ctx, dirty);
-			} else {
-				if_block.d(1);
-				if_block = current_block_type(ctx);
-
-				if (if_block) {
-					if_block.c();
-					if_block.m(option, t);
-				}
-			}
-
-			if (dirty[0] & /*propsByType*/ 32768 && option_selected_value !== (option_selected_value = /*i*/ ctx[78] === /*choices*/ ctx[69].selected)) {
-				option.selected = option_selected_value;
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(option);
-			if_block.d();
-		}
-	};
-}
-
-// (587:54) 
-function create_if_block_6(ctx) {
-	let colorpicker;
-	let current;
-
-	function func(...args) {
-		return /*func*/ ctx[47](/*selectedName*/ ctx[70], ...args);
-	}
-
-	colorpicker = new ColorPicker({
-			props: {
-				value: /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].value,
-				onChange: func
-			}
-		});
-
-	return {
-		c() {
-			create_component(colorpicker.$$.fragment);
-		},
-		m(target, anchor) {
-			mount_component(colorpicker, target, anchor);
-			current = true;
-		},
-		p(new_ctx, dirty) {
-			ctx = new_ctx;
-			const colorpicker_changes = {};
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 98304) colorpicker_changes.value = /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].value;
-			if (dirty[0] & /*propsByType*/ 32768) colorpicker_changes.onChange = func;
-			colorpicker.$set(colorpicker_changes);
-		},
-		i(local) {
-			if (current) return;
-			transition_in(colorpicker.$$.fragment, local);
-			current = true;
-		},
-		o(local) {
-			transition_out(colorpicker.$$.fragment, local);
-			current = false;
-		},
-		d(detaching) {
-			destroy_component(colorpicker, detaching);
-		}
-	};
-}
-
-// (575:55) 
-function create_if_block_4(ctx) {
-	let select;
-	let show_if = !/*choices*/ ctx[69].includes(/*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].value);
-	let if_block_anchor;
-	let mounted;
-	let dispose;
-	let if_block = show_if && create_if_block_5();
-	let each_value_1 = /*choices*/ ctx[69];
-	let each_blocks = [];
-
-	for (let i = 0; i < each_value_1.length; i += 1) {
-		each_blocks[i] = create_each_block_1(get_each_context_1(ctx, each_value_1, i));
-	}
-
-	function change_handler_3(...args) {
-		return /*change_handler_3*/ ctx[46](/*selectedName*/ ctx[70], ...args);
-	}
-
-	return {
-		c() {
-			select = element("select");
-			if (if_block) if_block.c();
-			if_block_anchor = empty();
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].c();
-			}
-		},
-		m(target, anchor) {
-			insert(target, select, anchor);
-			if (if_block) if_block.m(select, null);
-			append(select, if_block_anchor);
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				if (each_blocks[i]) {
-					each_blocks[i].m(select, null);
-				}
-			}
-
-			if (!mounted) {
-				dispose = listen(select, "change", change_handler_3);
-				mounted = true;
-			}
-		},
-		p(new_ctx, dirty) {
-			ctx = new_ctx;
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 98304) show_if = !/*choices*/ ctx[69].includes(/*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].value);
-
-			if (show_if) {
-				if (if_block) ; else {
-					if_block = create_if_block_5();
-					if_block.c();
-					if_block.m(select, if_block_anchor);
-				}
-			} else if (if_block) {
-				if_block.d(1);
-				if_block = null;
-			}
-
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 98304) {
-				each_value_1 = /*choices*/ ctx[69];
-				let i;
-
-				for (i = 0; i < each_value_1.length; i += 1) {
-					const child_ctx = get_each_context_1(ctx, each_value_1, i);
-
-					if (each_blocks[i]) {
-						each_blocks[i].p(child_ctx, dirty);
-					} else {
-						each_blocks[i] = create_each_block_1(child_ctx);
-						each_blocks[i].c();
-						each_blocks[i].m(select, null);
-					}
-				}
-
-				for (; i < each_blocks.length; i += 1) {
-					each_blocks[i].d(1);
-				}
-
-				each_blocks.length = each_value_1.length;
-			}
-		},
-		i: noop$1,
-		o: noop$1,
-		d(detaching) {
-			if (detaching) detach(select);
-			if (if_block) if_block.d();
-			destroy_each(each_blocks, detaching);
-			mounted = false;
-			dispose();
-		}
-	};
-}
-
-// (557:20) {#if choices.type === "slider"}
-function create_if_block_3(ctx) {
-	let input;
-	let input_min_value;
-	let input_max_value;
-	let input_step_value;
-	let input_value_value;
-	let t0;
-	let span;
-	let t1_value = /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].displayed + "";
-	let t1;
-	let mounted;
-	let dispose;
-
-	function change_handler_2(...args) {
-		return /*change_handler_2*/ ctx[45](/*selectedName*/ ctx[70], ...args);
-	}
-
-	return {
-		c() {
-			input = element("input");
-			t0 = space();
-			span = element("span");
-			t1 = text(t1_value);
-			attr(input, "type", "range");
-			attr(input, "min", input_min_value = /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].min);
-			attr(input, "max", input_max_value = /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].max);
-			attr(input, "step", input_step_value = /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].step || 1);
-			input.value = input_value_value = /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].value;
-			attr(span, "class", "current-value");
-		},
-		m(target, anchor) {
-			insert(target, input, anchor);
-			insert(target, t0, anchor);
-			insert(target, span, anchor);
-			append(span, t1);
-
-			if (!mounted) {
-				dispose = listen(input, "change", change_handler_2);
-				mounted = true;
-			}
-		},
-		p(new_ctx, dirty) {
-			ctx = new_ctx;
-
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 98304 && input_min_value !== (input_min_value = /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].min)) {
-				attr(input, "min", input_min_value);
-			}
-
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 98304 && input_max_value !== (input_max_value = /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].max)) {
-				attr(input, "max", input_max_value);
-			}
-
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 98304 && input_step_value !== (input_step_value = /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].step || 1)) {
-				attr(input, "step", input_step_value);
-			}
-
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 98304 && input_value_value !== (input_value_value = /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].value)) {
-				input.value = input_value_value;
-			}
-
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 98304 && t1_value !== (t1_value = /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].displayed + "")) set_data(t1, t1_value);
-		},
-		i: noop$1,
-		o: noop$1,
-		d(detaching) {
-			if (detaching) detach(input);
-			if (detaching) detach(t0);
-			if (detaching) detach(span);
-			mounted = false;
-			dispose();
-		}
-	};
-}
-
-// (578:28) {#if !choices.includes(allCurrentPropDefs[selectedName].value)}
-function create_if_block_5(ctx) {
-	let option;
-
-	return {
-		c() {
-			option = element("option");
-			option.textContent = "--- ";
-			option.selected = "true";
-			option.__value = " --- ";
-			option.value = option.__value;
-		},
-		m(target, anchor) {
-			insert(target, option, anchor);
-		},
-		d(detaching) {
-			if (detaching) detach(option);
-		}
-	};
-}
-
-// (581:28) {#each choices as choice}
-function create_each_block_1(ctx) {
-	let option;
-	let t_value = /*choice*/ ctx[73] + "";
-	let t;
-	let option_selected_value;
-	let option_value_value;
-
-	return {
-		c() {
-			option = element("option");
-			t = text(t_value);
-			option.selected = option_selected_value = /*choice*/ ctx[73] == /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].value || null;
-			option.__value = option_value_value = "\n                                    " + /*choice*/ ctx[73] + "\n                                ";
-			option.value = option.__value;
-		},
-		m(target, anchor) {
-			insert(target, option, anchor);
-			append(option, t);
-		},
-		p(ctx, dirty) {
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 98304 && t_value !== (t_value = /*choice*/ ctx[73] + "")) set_data(t, t_value);
-
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 98304 && option_selected_value !== (option_selected_value = /*choice*/ ctx[73] == /*allCurrentPropDefs*/ ctx[16][/*selectedName*/ ctx[70]].value || null)) {
-				option.selected = option_selected_value;
-			}
-
-			if (dirty[0] & /*allCurrentPropDefs, propsByType*/ 98304 && option_value_value !== (option_value_value = "\n                                    " + /*choice*/ ctx[73] + "\n                                ")) {
-				option.__value = option_value_value;
-				option.value = option.__value;
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(option);
-		}
-	};
-}
-
-// (531:12) {#each propsByType as choices}
-function create_each_block(ctx) {
-	let div1;
-	let div0;
-	let t0;
-	let span;
-	let t2;
-	let current_block_type_index;
-	let if_block1;
-	let div1_class_value;
-	let current;
-	let mounted;
-	let dispose;
-
-	function select_block_type_1(ctx, dirty) {
-		if (/*choices*/ ctx[69].props.length > 1) return create_if_block_7;
-		return create_else_block_1;
-	}
-
-	let current_block_type = select_block_type_1(ctx);
-	let if_block0 = current_block_type(ctx);
-
-	function click_handler_3() {
-		return /*click_handler_3*/ ctx[44](/*selectedName*/ ctx[70]);
-	}
-
-	const if_block_creators = [create_if_block_3, create_if_block_4, create_if_block_6];
-	const if_blocks = [];
-
-	function select_block_type_3(ctx, dirty) {
-		if (/*choices*/ ctx[69].type === "slider") return 0;
-		if (/*choices*/ ctx[69].type == "select") return 1;
-		if (/*choices*/ ctx[69].type == "color") return 2;
-		return -1;
-	}
-
-	function select_block_ctx(ctx, index) {
-		if (index === 1) return get_if_ctx(ctx);
-		return ctx;
-	}
-
-	if (~(current_block_type_index = select_block_type_3(ctx))) {
-		if_block1 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](select_block_ctx(ctx, current_block_type_index));
-	}
-
-	return {
-		c() {
-			div1 = element("div");
-			div0 = element("div");
-			if_block0.c();
-			t0 = space();
-			span = element("span");
-			span.textContent = "✕";
-			t2 = space();
-			if (if_block1) if_block1.c();
-			attr(span, "class", "delete");
-			attr(div0, "class", "prop-name");
-			attr(div1, "class", div1_class_value = "prop-section " + /*choices*/ ctx[69].type);
-		},
-		m(target, anchor) {
-			insert(target, div1, anchor);
-			append(div1, div0);
-			if_block0.m(div0, null);
-			append(div0, t0);
-			append(div0, span);
-			append(div1, t2);
-
-			if (~current_block_type_index) {
-				if_blocks[current_block_type_index].m(div1, null);
-			}
-
-			current = true;
-
-			if (!mounted) {
-				dispose = listen(span, "click", click_handler_3);
-				mounted = true;
-			}
-		},
-		p(new_ctx, dirty) {
-			ctx = new_ctx;
-
-			if (current_block_type === (current_block_type = select_block_type_1(ctx)) && if_block0) {
-				if_block0.p(ctx, dirty);
-			} else {
-				if_block0.d(1);
-				if_block0 = current_block_type(ctx);
-
-				if (if_block0) {
-					if_block0.c();
-					if_block0.m(div0, t0);
-				}
-			}
-
-			let previous_block_index = current_block_type_index;
-			current_block_type_index = select_block_type_3(ctx);
-
-			if (current_block_type_index === previous_block_index) {
-				if (~current_block_type_index) {
-					if_blocks[current_block_type_index].p(select_block_ctx(ctx, current_block_type_index), dirty);
-				}
-			} else {
-				if (if_block1) {
-					group_outros();
-
-					transition_out(if_blocks[previous_block_index], 1, 1, () => {
-						if_blocks[previous_block_index] = null;
-					});
-
-					check_outros();
-				}
-
-				if (~current_block_type_index) {
-					if_block1 = if_blocks[current_block_type_index];
-
-					if (!if_block1) {
-						if_block1 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](select_block_ctx(ctx, current_block_type_index));
-						if_block1.c();
-					} else {
-						if_block1.p(select_block_ctx(ctx, current_block_type_index), dirty);
-					}
-
-					transition_in(if_block1, 1);
-					if_block1.m(div1, null);
-				} else {
-					if_block1 = null;
-				}
-			}
-
-			if (!current || dirty[0] & /*propsByType*/ 32768 && div1_class_value !== (div1_class_value = "prop-section " + /*choices*/ ctx[69].type)) {
-				attr(div1, "class", div1_class_value);
-			}
-		},
-		i(local) {
-			if (current) return;
-			transition_in(if_block1);
-			current = true;
-		},
-		o(local) {
-			transition_out(if_block1);
-			current = false;
-		},
-		d(detaching) {
-			if (detaching) detach(div1);
-			if_block0.d();
-
-			if (~current_block_type_index) {
-				if_blocks[current_block_type_index].d();
-			}
-
-			mounted = false;
-			dispose();
-		}
-	};
-}
-
-// (595:12) {#if currentRule === "inline" && bringableToFront[selectedElemIndex] !== null}
-function create_if_block_2(ctx) {
-	let div;
-	let mounted;
-	let dispose;
-
-	return {
-		c() {
-			div = element("div");
-			div.textContent = "Bring to front";
-			attr(div, "class", "btn");
-			toggle_class(div, "active", /*bringableToFront*/ ctx[17][/*selectedElemIndex*/ ctx[6]] === true);
-		},
-		m(target, anchor) {
-			insert(target, div, anchor);
-
-			if (!mounted) {
-				dispose = listen(div, "click", /*bringToFront*/ ctx[24]);
-				mounted = true;
-			}
-		},
-		p(ctx, dirty) {
-			if (dirty[0] & /*bringableToFront, selectedElemIndex*/ 131136) {
-				toggle_class(div, "active", /*bringableToFront*/ ctx[17][/*selectedElemIndex*/ ctx[6]] === true);
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(div);
-			mounted = false;
-			dispose();
-		}
-	};
-}
-
-// (600:12) {#if currentRule === "inline" && inlineDeletable(currentElement)}
-function create_if_block_1(ctx) {
-	let div;
-	let mounted;
-	let dispose;
-
-	return {
-		c() {
-			div = element("div");
-			div.textContent = "Delete element";
-			attr(div, "class", "btn delete-elem");
-		},
-		m(target, anchor) {
-			insert(target, div, anchor);
-
-			if (!mounted) {
-				dispose = listen(div, "click", /*deleteElem*/ ctx[25]);
-				mounted = true;
-			}
-		},
-		p: noop$1,
-		d(detaching) {
-			if (detaching) detach(div);
-			mounted = false;
-			dispose();
-		}
-	};
-}
-
-function create_fragment(ctx) {
-	let div0;
-	let t0;
-	let svg;
-	let clipPath;
-	let path;
-	let rect;
-	let svg_width_value;
-	let svg_height_value;
-	let t1;
-	let div4;
-	let div1;
-	let t3;
-	let t4;
-	let div2;
-	let b0;
-	let t6;
-	let show_if;
-	let t7;
-	let div3;
-	let b1;
-	let t9;
-	let t10;
-	let current;
-	let mounted;
-	let dispose;
-	let if_block0 = /*targetsToSearch*/ ctx[3].length > 1 && create_if_block_11(ctx);
-
-	function select_block_type(ctx, dirty) {
-		if (dirty[0] & /*allRules, selectedElemIndex*/ 80) show_if = null;
-		if (show_if == null) show_if = !!(nbChars(/*getRuleNamesTransformed*/ ctx[21](/*allRules*/ ctx[4][/*selectedElemIndex*/ ctx[6]])) > 30);
-		if (show_if) return create_if_block_10;
-		return create_else_block_2;
-	}
-
-	let current_block_type = select_block_type(ctx, [-1, -1, -1]);
-	let if_block1 = current_block_type(ctx);
-	let each_value_3 = /*allTypes*/ ctx[5][/*selectedElemIndex*/ ctx[6]] || [];
-	let each_blocks = [];
-
-	for (let i = 0; i < each_value_3.length; i += 1) {
-		each_blocks[i] = create_each_block_3(get_each_context_3(ctx, each_value_3, i));
-	}
-
-	let if_block2 = /*allTypes*/ ctx[5][/*selectedElemIndex*/ ctx[6]] && create_if_block(ctx);
-
-	return {
-		c() {
-			div0 = element("div");
-			t0 = space();
-			svg = svg_element("svg");
-			clipPath = svg_element("clipPath");
-			path = svg_element("path");
-			rect = svg_element("rect");
-			t1 = space();
-			div4 = element("div");
-			div1 = element("div");
-			div1.textContent = "x";
-			t3 = space();
-			if (if_block0) if_block0.c();
-			t4 = space();
-			div2 = element("div");
-			b0 = element("b");
-			b0.textContent = "Applied to:";
-			t6 = space();
-			if_block1.c();
-			t7 = space();
-			div3 = element("div");
-			b1 = element("b");
-			b1.textContent = "Property type:";
-			t9 = space();
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].c();
-			}
-
-			t10 = space();
-			if (if_block2) if_block2.c();
-			set_style(div0, "position", "absolute");
-			attr(path, "d", /*pathWithHoles*/ ctx[13]);
-			attr(clipPath, "id", "overlay-clip");
-			attr(clipPath, "clip-rule", "evenodd");
-			attr(rect, "y", "0");
-			attr(rect, "x", "0");
-			attr(rect, "height", "100%");
-			attr(rect, "width", "100%");
-			attr(rect, "class", "overlay-over");
-			attr(svg, "class", "ise-helper-wrapper");
-			attr(svg, "version", "1.1");
-			attr(svg, "xmlns", "http://www.w3.org/2000/svg");
-			attr(svg, "xmlns:xlink", "http://www.w3.org/1999/xlink");
-			attr(svg, "width", svg_width_value = /*pageDimensions*/ ctx[14].width);
-			attr(svg, "height", svg_height_value = /*pageDimensions*/ ctx[14].height);
-			attr(div1, "class", "close-button");
-			attr(div2, "class", "select-tab");
-			attr(div3, "class", "select-tab");
-			attr(div4, "class", "ise");
-		},
-		m(target, anchor) {
-			insert(target, div0, anchor);
-			/*div0_binding*/ ctx[37](div0);
-			insert(target, t0, anchor);
-			insert(target, svg, anchor);
-			append(svg, clipPath);
-			append(clipPath, path);
-			append(svg, rect);
-			/*svg_binding*/ ctx[38](svg);
-			insert(target, t1, anchor);
-			insert(target, div4, anchor);
-			append(div4, div1);
-			append(div4, t3);
-			if (if_block0) if_block0.m(div4, null);
-			append(div4, t4);
-			append(div4, div2);
-			append(div2, b0);
-			append(div2, t6);
-			if_block1.m(div2, null);
-			append(div4, t7);
-			append(div4, div3);
-			append(div3, b1);
-			append(div3, t9);
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				if (each_blocks[i]) {
-					each_blocks[i].m(div3, null);
-				}
-			}
-
-			append(div4, t10);
-			if (if_block2) if_block2.m(div4, null);
-			/*div4_binding*/ ctx[48](div4);
-			current = true;
-
-			if (!mounted) {
-				dispose = [
-					listen(svg, "click", /*overlayClicked*/ ctx[22]),
-					listen(div1, "click", /*close*/ ctx[2])
-				];
-
-				mounted = true;
-			}
-		},
-		p(ctx, dirty) {
-			if (!current || dirty[0] & /*pathWithHoles*/ 8192) {
-				attr(path, "d", /*pathWithHoles*/ ctx[13]);
-			}
-
-			if (!current || dirty[0] & /*pageDimensions*/ 16384 && svg_width_value !== (svg_width_value = /*pageDimensions*/ ctx[14].width)) {
-				attr(svg, "width", svg_width_value);
-			}
-
-			if (!current || dirty[0] & /*pageDimensions*/ 16384 && svg_height_value !== (svg_height_value = /*pageDimensions*/ ctx[14].height)) {
-				attr(svg, "height", svg_height_value);
-			}
-
-			if (/*targetsToSearch*/ ctx[3].length > 1) {
-				if (if_block0) {
-					if_block0.p(ctx, dirty);
-				} else {
-					if_block0 = create_if_block_11(ctx);
-					if_block0.c();
-					if_block0.m(div4, t4);
-				}
-			} else if (if_block0) {
-				if_block0.d(1);
-				if_block0 = null;
-			}
-
-			if (current_block_type === (current_block_type = select_block_type(ctx, dirty)) && if_block1) {
-				if_block1.p(ctx, dirty);
-			} else {
-				if_block1.d(1);
-				if_block1 = current_block_type(ctx);
-
-				if (if_block1) {
-					if_block1.c();
-					if_block1.m(div2, null);
-				}
-			}
-
-			if (dirty[0] & /*selectedTypeIndex, allTypes, selectedElemIndex, currentRule, hasDisplayedCustom*/ 786784) {
-				each_value_3 = /*allTypes*/ ctx[5][/*selectedElemIndex*/ ctx[6]] || [];
-				let i;
-
-				for (i = 0; i < each_value_3.length; i += 1) {
-					const child_ctx = get_each_context_3(ctx, each_value_3, i);
-
-					if (each_blocks[i]) {
-						each_blocks[i].p(child_ctx, dirty);
-					} else {
-						each_blocks[i] = create_each_block_3(child_ctx);
-						each_blocks[i].c();
-						each_blocks[i].m(div3, null);
-					}
-				}
-
-				for (; i < each_blocks.length; i += 1) {
-					each_blocks[i].d(1);
-				}
-
-				each_blocks.length = each_value_3.length;
-			}
-
-			if (/*allTypes*/ ctx[5][/*selectedElemIndex*/ ctx[6]]) {
-				if (if_block2) {
-					if_block2.p(ctx, dirty);
-
-					if (dirty[0] & /*allTypes, selectedElemIndex*/ 96) {
-						transition_in(if_block2, 1);
-					}
-				} else {
-					if_block2 = create_if_block(ctx);
-					if_block2.c();
-					transition_in(if_block2, 1);
-					if_block2.m(div4, null);
-				}
-			} else if (if_block2) {
-				group_outros();
-
-				transition_out(if_block2, 1, 1, () => {
-					if_block2 = null;
-				});
-
-				check_outros();
-			}
-		},
-		i(local) {
-			if (current) return;
-			transition_in(if_block2);
-			current = true;
-		},
-		o(local) {
-			transition_out(if_block2);
-			current = false;
-		},
-		d(detaching) {
-			if (detaching) detach(div0);
-			/*div0_binding*/ ctx[37](null);
-			if (detaching) detach(t0);
-			if (detaching) detach(svg);
-			/*svg_binding*/ ctx[38](null);
-			if (detaching) detach(t1);
-			if (detaching) detach(div4);
-			if (if_block0) if_block0.d();
-			if_block1.d();
-			destroy_each(each_blocks, detaching);
-			if (if_block2) if_block2.d();
-			/*div4_binding*/ ctx[48](null);
-			mounted = false;
-			run_all(dispose);
-		}
-	};
-}
-
-const typeText = "text";
-const typeBorder = "border";
-const typeStroke = "stroke";
-const typeBackground = "background";
-const customType = "custom";
-
-function getRuleNames(rules) {
-	if (!rules) return [];
-
-	return rules.map((rule, i) => {
-		if (rule === "inline") return "inline";
-		const cssSelector = rule.selectorText;
-		const title = rule.parentStyleSheet.title || `${i}`;
-		return `${title}: ${cssSelector}`;
-	});
-}
-
-function getBoundingBoxInfos(el, padding = 0) {
-	const rect = el.getBoundingClientRect();
-
-	return {
-		left: rect.left + window.scrollX - padding,
-		top: rect.top + window.scrollY - padding,
-		width: rect.width + padding * 2,
-		height: rect.height + padding * 2,
-		right: rect.left + window.scrollX + rect.width + padding,
-		bottom: rect.top + window.scrollY + rect.height + padding
-	};
-}
-
-function cssRgbToHex(rgbStr) {
-	const m = rgbStr.match(/[0-9\.]+/g).map(i => parseFloat(i));
-	if (m.length === 3) m.push(1);
-
-	return m.reduce(
-		(hexStr, cur, i) => {
-			if (i === 3) hexStr += Math.round(cur * 255).toString(16).padStart(2, "0"); else hexStr += cur.toString(16).padStart(2, "0");
-			return hexStr;
-		},
-		"#"
-	);
-}
-
-// type one of: "number", "rgb", "font", "raw"
-function parsePropvalue(value, type = "number") {
-	if (type == "raw") return value;
-	if (type == "number" && (/[0-9]+(px)|(em)|(rem)/).test(value)) return parseInt(value);
-
-	if (type == "rgb") {
-		if (value === "none") return "#00000000";
-		if (value.includes("rgb") || value[0] == "#") return cssRgbToHex(value);
-	}
-
-	return value;
-}
-
-function instance($$self, $$props, $$invalidate) {
-	let currentElement;
-	let currentRule;
+var root_2 = from_html(`<span> </span>`);
+var root_1 = from_html(`<div class="select-tab"><b>Element</b> <!></div>`);
+var on_change = (e, selectRule) => selectRule(e.target.value);
+var root_4 = from_html(`<option> </option>`);
+var root_3 = from_html(`<select></select>`);
+var root_6 = from_html(`<span> </span>`);
+var root_8 = from_html(`<span> </span>`);
+
+var on_change_1 = async (e, choices) => {
+	(get(choices).selected = e.target.value);
+	await tick();
+};
+
+var root_12 = from_html(`<option><!></option>`);
+var root_11 = from_html(`<select></select>`);
+var root_15 = from_html(`<span> </span>`);
+var on_click = (__3, deleteProp, selectedName) => deleteProp(get(selectedName));
+
+var on_change_2 = (
+	e,
+	updateProp,
+	selectedName,
+	allCurrentPropDefs
+) => updateProp(get(selectedName), e.target.value, get(allCurrentPropDefs)[get(selectedName)].suffix, e.target);
+
+var root_16 = from_html(`<input type="range"/> <span class="current-value"> </span>`, 1);
+var on_change_3 = (e, updateProp, selectedName) => updateProp(get(selectedName), e.target.value);
+var root_19 = from_html(`<option selected="true">---</option>`);
+var root_20 = from_html(`<option> </option>`);
+var root_18 = from_html(`<select><!><!></select>`);
+var root_10 = from_html(`<div><div class="prop-name"><!> <span class="delete">✕</span></div> <!></div>`);
+var root_23 = from_html(`<div>Bring to front</div>`);
+var root_24 = from_html(`<div class="btn delete-elem">Delete element</div>`);
+var root_9 = from_html(`<div class="editor"><!> <!> <!></div>`);
+var root = from_html(`<div style="position: absolute;"></div> <svg class="ise-helper-wrapper" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><clipPath id="overlay-clip" clip-rule="evenodd"><path></path></clipPath><rect y="0" x="0" height="100%" width="100%" class="overlay-over"></rect></svg> <div class="ise"><div class="close-button">x</div> <!> <div class="select-tab"><b>Applied to:</b> <!></div> <div class="select-tab"><b>Property type:</b> <!></div> <!></div>`, 1);
+
+function InlineStyleEditor$1($$anchor, $$props) {
+	push($$props, true);
 
 	const strokeElements = [
 		"altGlyph",
@@ -3775,10 +5508,29 @@ function instance($$self, $$props, $$invalidate) {
 		"tspan"
 	];
 
-	const borderProps = ["border-radius", "border-width", "border-color", "border-style"];
+	const borderProps = [
+		"border-radius",
+		"border-width",
+		"border-color",
+		"border-style"
+	];
+
 	const backgroundProps = ["background-color"];
-	const fontProps = ["font-family", "font-size", "font-weight", "color"];
-	const pathProps = ["stroke-width", "stroke", "stroke-dasharray", "stroke-linejoin", "fill"];
+
+	const fontProps = [
+		"font-family",
+		"font-size",
+		"font-weight",
+		"color"
+	];
+
+	const pathProps = [
+		"stroke-width",
+		"stroke",
+		"stroke-dasharray",
+		"stroke-linejoin",
+		"fill"
+	];
 
 	const cssPropByType = {
 		"border-radius": {
@@ -3838,22 +5590,23 @@ function instance($$self, $$props, $$invalidate) {
 		},
 		"background-color": { type: "color" }
 	};
+	const getElems = $$props.getElems ?? null;
+	const listenOnClick = $$props.listenOnClick ?? false;
+	const onStyleChanged = $$props.onStyleChanged ?? (() => {});
+	const customProps = $$props.customProps ?? {};
+	const inlineDeletable = $$props.inlineDeletable ?? (() => true);
+	const cssRuleFilter = $$props.cssRuleFilter ?? null;
 
-	let { getElems = null } = $$props;
-	let { listenOnClick = false } = $$props;
-
-	let { onStyleChanged = () => {
-		
-	} } = $$props;
-
-	let { customProps = {} } = $$props;
-	let { inlineDeletable = () => true } = $$props;
-	let { cssRuleFilter = null } = $$props;
-
-	let { getCssRuleName = (cssRuleName, element) => {
+	const getCssRuleName = $$props.getCssRuleName ?? ((cssRuleName, element) => {
 		if (cssRuleName === "inline") return "Selected element";
 		return cssRuleName;
-	} } = $$props;
+	});
+
+	const typeText = "text";
+	const typeBorder = "border";
+	const typeStroke = "stroke";
+	const typeBackground = "background";
+	const customType = "custom";
 
 	const propByType = {
 		[typeText]: fontProps,
@@ -3864,31 +5617,53 @@ function instance($$self, $$props, $$invalidate) {
 	};
 
 	const inputTypeOrder = { slider: 0, select: 1, color: 2 };
-	let elementToListen = null;
-	let clickedElement = null;
-	let positionAnchor;
-	let self;
-	let helperElemWrapper;
-	let pathWithHoles = "";
-	let pageDimensions = { width: 0, height: 0 };
-	let targetsToSearch = [[]];
-	let allRules = []; // list of list of CSS rules, for every target element
-	let allTypes = []; // list of list of types (e.g color, border), for every target element
-	let selectedElemIndex = 0;
-	let selectedRuleIndex = 0;
-	let selectedTypeIndex = 0;
-	let propsByType; // propType -> {[props], selected}
-	let allCurrentPropDefs = {}; // propName => selectorDef
-	let bringableToFront = []; // null = not bringable, true = bringable, false = was bringed
-	let hasDisplayedCustom = false;
-	let curType;
+	// State variables
+	let elementToListen = state(null);
+	let clickedElement = state(null);
+	let positionAnchor = state(void 0);
+	let self = state(void 0);
+	let helperElemWrapper = state(void 0);
+	let pathWithHoles = state("");
+	let pageDimensions = state(proxy({ width: 0, height: 0 }));
+	let targetsToSearch = state(proxy([[]]));
+	let allRules = state(proxy([])); // list of list of CSS rules, for every target element
+	let allTypes = state(proxy([])); // list of list of types (e.g color, border), for every target element
+	let selectedElemIndex = state(0);
+	let selectedRuleIndex = state(0);
+	let selectedTypeIndex = state(0);
+	let propsByType = state(void 0); // propType -> {[props], selected}
+	let allCurrentPropDefs = state(proxy({})); // propName => selectorDef
+	let bringableToFront = state(proxy([])); // null = not bringable, true = bringable, false = was bringed
+	let hasDisplayedCustom = state(false);
+	// Reactive derived values
+	const currentElement = user_derived(() => get(targetsToSearch)[get(selectedElemIndex)]?.[0]);
+	const currentRule = user_derived(() => get(allRules)[get(selectedElemIndex)]?.[get(selectedRuleIndex)]);
+	let curType = state(void 0);
+
+	user_effect(() => {
+		if (get(elementToListen) !== null) {
+			init();
+		}
+	});
+
+	user_effect(() => {
+		if (get(allTypes)[get(selectedElemIndex)]?.[get(selectedTypeIndex)] !== get(curType)) {
+			set(curType, get(allTypes)[get(selectedElemIndex)]?.[get(selectedTypeIndex)], true);
+		}
+	});
+
+	user_effect(() => {
+		if (get(curType) || get(selectedRuleIndex) || get(selectedElemIndex)) {
+			initAndGroup();
+		}
+	});
 
 	onMount(() => {
 		close();
-		$$invalidate(35, elementToListen = self.parentNode);
-		document.body.appendChild(self);
-		document.body.appendChild(helperElemWrapper);
-		document.body.appendChild(positionAnchor);
+		set(elementToListen, get(self).parentNode, true);
+		document.body.appendChild(get(self));
+		document.body.appendChild(get(helperElemWrapper));
+		document.body.appendChild(get(positionAnchor));
 		udpatePageDimensions();
 
 		// make sure the layout is computed to get the client size
@@ -3904,7 +5679,7 @@ function instance($$self, $$props, $$invalidate) {
 
 	onDestroy(() => {
 		window.removeEventListener("resize", udpatePageDimensions);
-		if (listenOnClick) elementToListen.removeEventListener("click", _open);
+		if (listenOnClick) get(elementToListen).removeEventListener("click", _open);
 	});
 
 	function getFontFamilies() {
@@ -3913,15 +5688,16 @@ function instance($$self, $$props, $$invalidate) {
 
 	function initAndGroup() {
 		const allProps = { ...cssPropByType, ...customProps };
-		const _allCurrentPropDefs = pick(allProps, propByType[curType]);
+		const _allCurrentPropDefs = pick(allProps, propByType[get(curType)]);
 
-		Object.keys(_allCurrentPropDefs).forEach(key => {
+		Object.keys(_allCurrentPropDefs).forEach((key) => {
 			const propSelectType = _allCurrentPropDefs[key].type;
 			let retrieveType = "number";
+
 			if (propSelectType === "color") retrieveType = "rgb"; else if (propSelectType === "select") retrieveType = "raw";
 
 			if (_allCurrentPropDefs[key].getter) {
-				const val = _allCurrentPropDefs[key].getter(currentElement);
+				const val = _allCurrentPropDefs[key].getter(get(currentElement));
 
 				if (val === null) {
 					delete _allCurrentPropDefs[key];
@@ -3931,37 +5707,54 @@ function instance($$self, $$props, $$invalidate) {
 				_allCurrentPropDefs[key].value = val;
 				_allCurrentPropDefs[key].displayed = val;
 			} else {
-				_allCurrentPropDefs[key].displayed = getComputedPropValue(currentElement, key, "raw");
-				_allCurrentPropDefs[key].value = getComputedPropValue(currentElement, key, retrieveType);
+				_allCurrentPropDefs[key].displayed = getComputedPropValue(get(currentElement), key, "raw");
+				_allCurrentPropDefs[key].value = getComputedPropValue(get(currentElement), key, retrieveType);
 			}
 		});
 
-		$$invalidate(15, propsByType = Object.entries(_allCurrentPropDefs).reduce(
-			(byType, [propName, selectorDef]) => {
-				const selectorType = selectorDef.type;
-				const existing = byType.find(x => x.type === selectorType);
+		set(
+			propsByType,
+			Object.entries(_allCurrentPropDefs).reduce(
+				(byType, [propName, selectorDef]) => {
+					const selectorType = selectorDef.type;
+					const existing = byType.find((x) => x.type === selectorType);
 
-				if (!existing) byType.push({
-					selected: 0,
-					props: [propName],
-					type: selectorType
-				}); else existing.props.push(propName);
+					if (!existing) byType.push({
+						selected: 0,
+						props: [propName],
+						type: selectorType
+					}); else existing.props.push(propName);
 
-				return byType;
-			},
-			[]
-		).sort((a, b) => {
-			if (inputTypeOrder[a.type] < inputTypeOrder[b.type]) return -1;
-			if (inputTypeOrder[a.type] > inputTypeOrder[b.type]) return 1;
-			return 0;
-		}));
+					return byType;
+				},
+				[]
+			).sort((a, b) => {
+				if (inputTypeOrder[a.type] < inputTypeOrder[b.type]) return -1;
+				if (inputTypeOrder[a.type] > inputTypeOrder[b.type]) return 1;
+				return 0;
+			}),
+			true
+		);
 
-		$$invalidate(16, allCurrentPropDefs = _allCurrentPropDefs);
+		set(allCurrentPropDefs, _allCurrentPropDefs, true);
 		updateHelpers();
 	}
 
+	function getRuleNames(rules) {
+		if (!rules) return [];
+
+		return rules.map((rule, i) => {
+			if (rule === "inline") return "inline";
+
+			const cssSelector = rule.selectorText;
+			const title = rule.parentStyleSheet.title || `${i}`;
+
+			return `${title}: ${cssSelector}`;
+		});
+	}
+
 	function getRuleNamesTransformed(rules) {
-		return getRuleNames(rules).map(name => getCssRuleName(name, clickedElement));
+		return getRuleNames(rules).map((name) => getCssRuleName(name, get(clickedElement)));
 	}
 
 	let warningDisplayed = new Set();
@@ -3980,8 +5773,9 @@ function instance($$self, $$props, $$invalidate) {
 
 						for (let r in rules) {
 							let selectorText = rules[r].selectorText;
+
 							if (!selectorText || rules[r].selectorText.length > 50) continue; // skip selectors too long
-							if (selectorText.split(",").some(selector => selector === "*")) continue; // skip * selector
+							if (selectorText.split(",").some((selector) => selector === "*")) continue; // skip * selector
 							if (selectorText.endsWith(":hover")) selectorText = selectorText.substring(0, selectorText.length - (":hover").length);
 
 							if (el.matches(selectorText)) {
@@ -4020,6 +5814,7 @@ function instance($$self, $$props, $$invalidate) {
 
 				if (strokeElements.includes(elemTagName)) {
 					types.push(typeStroke);
+
 					const parentTag = elem.parentElement.tagName.toLowerCase();
 
 					if (parentTag === "g" && elem.previousElementSibling && elem.previousElementSibling.tagName.toLowerCase() == elemTagName) {
@@ -4030,7 +5825,7 @@ function instance($$self, $$props, $$invalidate) {
 					types.push(typeBackground);
 				}
 
-				if (bringable) bringableToFront.push(true); else bringableToFront.push(null);
+				if (bringable) get(bringableToFront).push(true); else get(bringableToFront).push(null);
 				typesByElem.push(types);
 				return typesByElem;
 			},
@@ -4039,7 +5834,7 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	function init() {
-		if (listenOnClick) elementToListen.addEventListener("click", _open);
+		if (listenOnClick) get(elementToListen).addEventListener("click", _open);
 	}
 
 	function _open(e) {
@@ -4047,29 +5842,29 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	async function open(el, x, y) {
-		$$invalidate(9, clickedElement = el);
+		set(clickedElement, el, true);
 		udpatePageDimensions();
-		if (el.classList.contains("overlay-over")) return overlayClicked(); else if (self.contains(el)) return;
-		$$invalidate(6, selectedElemIndex = 0);
-		$$invalidate(7, selectedRuleIndex = 0);
-		$$invalidate(8, selectedTypeIndex = 0);
-		$$invalidate(17, bringableToFront = []);
-		$$invalidate(5, allTypes = []);
-		$$invalidate(4, allRules = []);
-		if (getElems) $$invalidate(3, targetsToSearch = getElems(el)); else $$invalidate(3, targetsToSearch = [[el, "Clicked"]]);
-		$$invalidate(5, allTypes = getEditableTypes(targetsToSearch));
-		$$invalidate(18, hasDisplayedCustom = false);
-		$$invalidate(4, allRules = getMatchedCSSRules(targetsToSearch));
+		if (el.classList.contains("overlay-over")) return overlayClicked(); else if (get(self).contains(el)) return;
+		set(selectedElemIndex, 0);
+		set(selectedRuleIndex, 0);
+		set(selectedTypeIndex, 0);
+		set(bringableToFront, [], true);
+		set(allTypes, [], true);
+		set(allRules, [], true);
+		if (getElems) set(targetsToSearch, getElems(el), true); else set(targetsToSearch, [[el, "Clicked"]], true);
+		set(allTypes, getEditableTypes(get(targetsToSearch)), true);
+		set(hasDisplayedCustom, false);
+		set(allRules, getMatchedCSSRules(get(targetsToSearch)), true);
 
 		for (let def of Object.values(customProps)) {
 			if (def.getter(el) !== null) {
-				$$invalidate(18, hasDisplayedCustom = true);
+				set(hasDisplayedCustom, true);
 				break;
 			}
 		}
 
 		if (Object.keys(customProps).length) {
-			allTypes[0].push(customType);
+			get(allTypes)[0].push(customType);
 		}
 
 		await tick();
@@ -4077,18 +5872,19 @@ function instance($$self, $$props, $$invalidate) {
 
 		if (x && y) show(x, y); else {
 			const rect = getBoundingBoxInfos(el, 15);
+
 			show(rect.left, rect.top);
 		}
 	}
 
 	function close() {
-		$$invalidate(11, self.style.display = "none", self);
-		$$invalidate(12, helperElemWrapper.style.display = "none", helperElemWrapper);
-		$$invalidate(13, pathWithHoles = "");
+		get(self).style.display = "none";
+		get(helperElemWrapper).style.display = "none";
+		set(pathWithHoles, "");
 	}
 
 	function isOpened() {
-		return self.style.display === "block";
+		return get(self).style.display === "block";
 	}
 
 	function overlayClicked() {
@@ -4096,55 +5892,67 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	function show(x, y) {
-		$$invalidate(11, self.style.display = "block", self);
-		$$invalidate(11, self.style.opacity = 0, self);
-		const popupDimension = self.getBoundingClientRect();
+		get(self).style.display = "block";
+		get(self).style.opacity = 0;
 
-		x = x + popupDimension.width + 20 > pageDimensions.width
-		? x - popupDimension.width - 20
-		: x + 20;
+		const popupDimension = get(self).getBoundingClientRect();
 
-		y = y + popupDimension.height + 20 > pageDimensions.height
-		? y - popupDimension.height - 20
-		: y + 20;
-
+		x = x + popupDimension.width + 20 > get(pageDimensions).width ? x - popupDimension.width - 20 : x + 20;
+		y = y + popupDimension.height + 20 > get(pageDimensions).height ? y - popupDimension.height - 20 : y + 20;
 		y = Math.max(y, 0);
-		$$invalidate(11, self.style.left = x + "px", self);
-		$$invalidate(11, self.style.top = y + "px", self);
-		$$invalidate(12, helperElemWrapper.style.display = "block", helperElemWrapper);
-		$$invalidate(11, self.style.opacity = 1, self);
+		get(self).style.left = x + "px";
+		get(self).style.top = y + "px";
+		get(helperElemWrapper).style.display = "block";
+		get(self).style.opacity = 1;
 		updateHelpers();
 	}
 
 	async function updateHelpers() {
 		await tick();
-		if (!currentRule) return;
+		if (!get(currentRule)) return;
+
 		let matching;
 
-		if (currentRule === "inline") matching = [currentElement]; else {
-			const selector = currentRule.selectorText.replace(/(:hover)|:focus/g, "");
+		if (get(currentRule) === "inline") matching = [get(currentElement)]; else {
+			const selector = get(currentRule).selectorText.replace(/(:hover)|:focus/g, "");
+
 			matching = Array.from(document.querySelectorAll(selector));
 		}
 
-		const boundingBoxes = matching.map(el => getBoundingBoxInfos(el, 10));
-		$$invalidate(13, pathWithHoles = computeContours(boundingBoxes, pageDimensions));
+		const boundingBoxes = matching.map((el) => getBoundingBoxInfos(el, 10));
+
+		set(pathWithHoles, computeContours(boundingBoxes, get(pageDimensions)), true);
+	}
+
+	function getBoundingBoxInfos(el, padding = 0) {
+		const rect = el.getBoundingClientRect();
+
+		return {
+			left: rect.left + window.scrollX - padding,
+			top: rect.top + window.scrollY - padding,
+			width: rect.width + padding * 2,
+			height: rect.height + padding * 2,
+			right: rect.left + window.scrollX + rect.width + padding,
+			bottom: rect.top + window.scrollY + rect.height + padding
+		};
 	}
 
 	function _updateProp(propName, val, suffix) {
 		const finalValue = suffix ? val + suffix : val;
 
-		if (currentRule === "inline") {
-			if (allCurrentPropDefs[propName].setter) {
-				allCurrentPropDefs[propName].setter(currentElement, val);
+		if (get(currentRule) === "inline") {
+			if (get(allCurrentPropDefs)[propName].setter) {
+				get(allCurrentPropDefs)[propName].setter(get(currentElement), val);
 			} else {
-				const style = currentElement.style; // do not trigger reactivity on currentElement
+				const style = get(currentElement).style; // do not trigger reactivity on currentElement
+
 				style[propName] = finalValue;
 			}
-		} else currentRule.style.setProperty(propName, finalValue);
+		} else get(currentRule).style.setProperty(propName, finalValue);
 
-		$$invalidate(16, allCurrentPropDefs[propName].value = val, allCurrentPropDefs);
-		$$invalidate(16, allCurrentPropDefs[propName].displayed = finalValue, allCurrentPropDefs);
-		onStyleChanged(currentElement, currentRule, propName, finalValue);
+		get(allCurrentPropDefs)[propName].value = val;
+		get(allCurrentPropDefs)[propName].displayed = finalValue;
+		onStyleChanged(get(currentElement), get(currentRule), propName, finalValue);
 		updateHelpers();
 	}
 
@@ -4157,242 +5965,501 @@ function instance($$self, $$props, $$invalidate) {
 		const marginTop = parseInt(bodyStyle.marginTop);
 		const marginBottom = parseInt(bodyStyle.marginBottom);
 
-		$$invalidate(14, pageDimensions = {
-			width: document.body.offsetWidth + marginLeft + marginRight,
-			height: document.body.offsetHeight + marginTop + marginBottom
-		});
+		set(
+			pageDimensions,
+			{
+				width: document.body.offsetWidth + marginLeft + marginRight,
+				height: document.body.offsetHeight + marginTop + marginBottom
+			},
+			true
+		);
+	}
+
+	function cssRgbToHex(rgbStr) {
+		const m = rgbStr.match(/[0-9\.]+/g).map((i) => parseFloat(i));
+
+		if (m.length === 3) m.push(1);
+
+		return m.reduce(
+			(hexStr, cur, i) => {
+				if (i === 3) hexStr += Math.round(cur * 255).toString(16).padStart(2, "0"); else hexStr += cur.toString(16).padStart(2, "0");
+				return hexStr;
+			},
+			"#"
+		);
+	}
+
+	// type one of: "number", "rgb", "font", "raw"
+	function parsePropvalue(value, type = "number") {
+		if (type == "raw") return value;
+		if (type == "number" && (/[0-9]+(px)|(em)|(rem)/).test(value)) return parseInt(value);
+
+		if (type == "rgb") {
+			if (value === "none") return "#00000000";
+			if (value.includes("rgb") || value[0] == "#") return cssRgbToHex(value);
+		}
+
+		return value;
 	}
 
 	function getComputedPropValue(el, cssProp, type = "number") {
-		let currentStyleValue = currentRule?.style?.[cssProp];
+		let currentStyleValue = get(currentRule)?.style?.[cssProp];
 
 		if (!currentStyleValue) {
 			const computed = getComputedStyle(el);
+
 			currentStyleValue = computed[cssProp];
 		}
 
 		return parsePropvalue(currentStyleValue, type);
 	}
 
-	function bringToFront() {
-		$$invalidate(17, bringableToFront[selectedElemIndex] = false, bringableToFront);
-		currentElement.parentNode.appendChild(currentElement);
-		onStyleChanged(currentElement, currentRule, "bringtofront", null);
-	}
-
-	function deleteElem() {
-		currentElement.remove();
-		close();
-	}
-
 	function deleteProp(propName) {
-		if (currentRule === "inline") {
-			currentElement.style.removeProperty(propName);
+		if (get(currentRule) === "inline") {
+			get(currentElement).style.removeProperty(propName);
 		} else {
-			currentRule.style.removeProperty(propName);
+			get(currentRule).style.removeProperty(propName);
 		}
 
-		onStyleChanged(currentElement, currentRule, propName, null);
+		onStyleChanged(get(currentElement), get(currentRule), propName, null);
 		initAndGroup();
 	}
 
 	function selectRule(ruleIndex) {
 		console.log("selectrule", ruleIndex);
-		const newRule = allRules[selectedElemIndex]?.[ruleIndex];
 
-		if (newRule !== "inline" && selectedTypeIndex === allTypes[selectedElemIndex].length - 1) {
-			$$invalidate(8, selectedTypeIndex = 0);
+		const newRule = get(allRules)[get(selectedElemIndex)]?.[ruleIndex];
+
+		if (newRule !== "inline" && get(selectedTypeIndex) === get(allTypes)[get(selectedElemIndex)].length - 1) {
+			set(selectedTypeIndex, 0);
 		}
 
-		$$invalidate(7, selectedRuleIndex = ruleIndex);
+		set(selectedRuleIndex, ruleIndex, true);
 	}
 
-	function div0_binding($$value) {
-		binding_callbacks[$$value ? 'unshift' : 'push'](() => {
-			positionAnchor = $$value;
-			$$invalidate(10, positionAnchor);
+	var fragment = root();
+	var div = first_child(fragment);
+
+	bind_this(div, ($$value) => set(positionAnchor, $$value), () => get(positionAnchor));
+
+	var svg = sibling(div, 2);
+
+	svg.__click = overlayClicked;
+
+	var clipPath = child(svg);
+	var path = child(clipPath);
+	bind_this(svg, ($$value) => set(helperElemWrapper, $$value), () => get(helperElemWrapper));
+
+	var div_1 = sibling(svg, 2);
+	var div_2 = child(div_1);
+
+	div_2.__click = close;
+
+	var node = sibling(div_2, 2);
+
+	{
+		var consequent = ($$anchor) => {
+			var div_3 = root_1();
+			var node_1 = sibling(child(div_3), 2);
+
+			each(node_1, 17, () => get(targetsToSearch), index, ($$anchor, $$item, elemIndex) => {
+				var $$array = user_derived(() => to_array(get($$item), 2));
+				let name = () => get($$array)[1];
+				var span = root_2();
+
+				span.__click = () => {
+					set(selectedElemIndex, elemIndex, true);
+					set(selectedRuleIndex, 0);
+				};
+
+				let classes;
+				var text = child(span);
+
+				template_effect(
+					($0) => {
+						classes = set_class(span, 1, '', null, classes, $0);
+						set_text(text, name());
+					},
+					[
+						() => ({
+							selected: get(selectedElemIndex) === elemIndex
+						})
+					]
+				);
+
+				append($$anchor, span);
+			});
+			append($$anchor, div_3);
+		};
+
+		if_block(node, ($$render) => {
+			if (get(targetsToSearch).length > 1) $$render(consequent);
 		});
 	}
 
-	function svg_binding($$value) {
-		binding_callbacks[$$value ? 'unshift' : 'push'](() => {
-			helperElemWrapper = $$value;
-			$$invalidate(12, helperElemWrapper);
+	var div_4 = sibling(node, 2);
+	var node_2 = sibling(child(div_4), 2);
+
+	{
+		var consequent_1 = ($$anchor) => {
+			var select = root_3();
+
+			select.__change = [on_change, selectRule];
+
+			each(select, 21, () => getRuleNames(get(allRules)[get(selectedElemIndex)]), index, ($$anchor, ruleName, ruleIndex) => {
+				var option = root_4();
+
+				option.value = option.__value = ruleIndex;
+
+				var text_1 = child(option);
+
+				template_effect(
+					($0) => {
+						set_selected(option, get(selectedRuleIndex) === ruleIndex);
+						set_text(text_1, $0);
+					},
+					[
+						() => getCssRuleName(get(ruleName), get(clickedElement))
+					]
+				);
+
+				append($$anchor, option);
+			});
+			append($$anchor, select);
+		};
+
+		var alternate = ($$anchor) => {
+			var fragment_1 = comment();
+			var node_3 = first_child(fragment_1);
+
+			each(node_3, 17, () => getRuleNames(get(allRules)[get(selectedElemIndex)]), index, ($$anchor, ruleName, ruleIndex) => {
+				var span_1 = root_6();
+
+				span_1.__click = () => {
+					selectRule(ruleIndex);
+				};
+
+				let classes_1;
+				var text_2 = child(span_1);
+
+				template_effect(
+					($0, $1) => {
+						set_attribute(span_1, 'title', get(ruleName));
+						classes_1 = set_class(span_1, 1, '', null, classes_1, $0);
+						set_text(text_2, $1);
+					},
+					[
+						() => ({
+							selected: get(selectedRuleIndex) === ruleIndex
+						}),
+						() => getCssRuleName(get(ruleName), get(clickedElement))
+					]
+				);
+
+				append($$anchor, span_1);
+			});
+
+			append($$anchor, fragment_1);
+		};
+
+		if_block(node_2, ($$render) => {
+			if (nbChars(getRuleNamesTransformed(get(allRules)[get(selectedElemIndex)])) > 30) $$render(consequent_1); else $$render(alternate, false);
 		});
 	}
 
-	const click_handler = elemIndex => {
-		$$invalidate(6, selectedElemIndex = elemIndex);
-		$$invalidate(7, selectedRuleIndex = 0);
-	};
+	var div_5 = sibling(div_4, 2);
+	var node_4 = sibling(child(div_5), 2);
 
-	const change_handler = e => selectRule(e.target.value);
+	each(node_4, 17, () => get(allTypes)[get(selectedElemIndex)] || [], index, ($$anchor, type, typeIndex) => {
+		var fragment_2 = comment();
+		var node_5 = first_child(fragment_2);
 
-	const click_handler_1 = ruleIndex => {
-		selectRule(ruleIndex);
-	};
+		{
+			var consequent_2 = ($$anchor) => {
+				var span_2 = root_8();
 
-	const click_handler_2 = typeIndex => {
-		$$invalidate(8, selectedTypeIndex = typeIndex);
-	};
+				span_2.__click = () => {
+					set(selectedTypeIndex, typeIndex, true);
+				};
 
-	const change_handler_1 = async (choices, each_value, choices_index, e) => {
-		$$invalidate(15, each_value[choices_index].selected = e.target.value, propsByType);
-		await tick();
-	};
+				let classes_2;
+				var text_3 = child(span_2);
 
-	const click_handler_3 = selectedName => deleteProp(selectedName);
-	const change_handler_2 = (selectedName, e) => updateProp(selectedName, e.target.value, allCurrentPropDefs[selectedName].suffix, e.target);
-	const change_handler_3 = (selectedName, e) => updateProp(selectedName, e.target.value);
-	const func = (selectedName, color) => updateProp(selectedName, color);
+				template_effect(
+					($0, $1) => {
+						classes_2 = set_class(span_2, 1, '', null, classes_2, $0);
+						set_text(text_3, $1);
+					},
+					[
+						() => ({
+							selected: get(selectedTypeIndex) === typeIndex
+						}),
+						() => get(type) === "stroke" ? "SVG paint" : capitalizeFirstLetter(get(type))
+					]
+				);
 
-	function div4_binding($$value) {
-		binding_callbacks[$$value ? 'unshift' : 'push'](() => {
-			self = $$value;
-			$$invalidate(11, self);
+				append($$anchor, span_2);
+			};
+
+			if_block(node_5, ($$render) => {
+				if (get(type) !== "custom" || get(currentRule) === "inline" && get(type) === "custom" && get(hasDisplayedCustom)) $$render(consequent_2);
+			});
+		}
+
+		append($$anchor, fragment_2);
+	});
+
+	var node_6 = sibling(div_5, 2);
+
+	{
+		var consequent_11 = ($$anchor) => {
+			var div_6 = root_9();
+			var node_7 = child(div_6);
+
+			each(node_7, 17, () => get(propsByType), index, ($$anchor, choices, $$index_6) => {
+				var div_7 = root_10();
+				const selectedName = user_derived(() => get(choices).props[get(choices).selected]);
+				var div_8 = child(div_7);
+				var node_8 = child(div_8);
+
+				{
+					var consequent_4 = ($$anchor) => {
+						var select_1 = root_11();
+
+						select_1.__change = [on_change_1, choices];
+
+						each(select_1, 21, () => get(choices).props, index, ($$anchor, propName, i) => {
+							var option_1 = root_12();
+
+							option_1.value = option_1.__value = i;
+
+							var node_9 = child(option_1);
+
+							{
+								var consequent_3 = ($$anchor) => {
+									var text_4 = text();
+
+									template_effect(($0) => set_text(text_4, `${$0 ?? ''} color`), [
+										() => capitalizeFirstLetter(get(propName))
+									]);
+
+									append($$anchor, text_4);
+								};
+
+								var alternate_1 = ($$anchor) => {
+									var text_5 = text();
+
+									template_effect(($0) => set_text(text_5, $0), [
+										() => pascalCaseToSentence(get(propName))
+									]);
+
+									append($$anchor, text_5);
+								};
+
+								if_block(node_9, ($$render) => {
+									if (get(choices).type === "color") $$render(consequent_3); else $$render(alternate_1, false);
+								});
+							}
+							template_effect(() => set_selected(option_1, i === get(choices).selected));
+							append($$anchor, option_1);
+						});
+						append($$anchor, select_1);
+					};
+
+					var alternate_2 = ($$anchor) => {
+						var span_3 = root_15();
+						var text_6 = child(span_3);
+
+						template_effect(($0) => set_text(text_6, $0), [
+							() => pascalCaseToSentence(get(selectedName))
+						]);
+
+						append($$anchor, span_3);
+					};
+
+					if_block(node_8, ($$render) => {
+						if (get(choices).props.length > 1) $$render(consequent_4); else $$render(alternate_2, false);
+					});
+				}
+
+				var span_4 = sibling(node_8, 2);
+
+				span_4.__click = [on_click, deleteProp, selectedName];
+
+				var node_10 = sibling(div_8, 2);
+
+				{
+					var consequent_5 = ($$anchor) => {
+						var fragment_5 = root_16();
+						var input = first_child(fragment_5);
+
+						input.__change = [
+							on_change_2,
+							updateProp,
+							selectedName,
+							allCurrentPropDefs
+						];
+
+						var span_5 = sibling(input, 2);
+						var text_7 = child(span_5);
+
+						template_effect(() => {
+							set_attribute(input, 'min', get(allCurrentPropDefs)[get(selectedName)].min);
+							set_attribute(input, 'max', get(allCurrentPropDefs)[get(selectedName)].max);
+							set_attribute(input, 'step', get(allCurrentPropDefs)[get(selectedName)].step || 1);
+							set_value(input, get(allCurrentPropDefs)[get(selectedName)].value);
+							set_text(text_7, get(allCurrentPropDefs)[get(selectedName)].displayed);
+						});
+
+						append($$anchor, fragment_5);
+					};
+
+					var alternate_3 = ($$anchor, $$elseif) => {
+						{
+							var consequent_7 = ($$anchor) => {
+								var select_2 = root_18();
+								const choices = user_derived(() => get(allCurrentPropDefs)[get(selectedName)].choices());
+
+								select_2.__change = [on_change_3, updateProp, selectedName];
+
+								var node_11 = child(select_2);
+
+								{
+									var consequent_6 = ($$anchor) => {
+										var option_2 = root_19();
+
+										append($$anchor, option_2);
+									};
+
+									if_block(node_11, ($$render) => {
+										if (!get(choices).includes(get(allCurrentPropDefs)[get(selectedName)].value)) $$render(consequent_6);
+									});
+								}
+
+								var node_12 = sibling(node_11);
+
+								each(node_12, 17, () => get(choices), index, ($$anchor, choice) => {
+									var option_3 = root_20();
+									var text_8 = child(option_3);
+
+									template_effect(() => {
+										set_selected(option_3, get(choice) == get(allCurrentPropDefs)[get(selectedName)].value || null);
+										set_text(text_8, get(choice));
+									});
+
+									append($$anchor, option_3);
+								});
+								append($$anchor, select_2);
+							};
+
+							var alternate_4 = ($$anchor, $$elseif) => {
+								{
+									var consequent_8 = ($$anchor) => {
+										ColorPicker($$anchor, {
+											get value() {
+												return get(allCurrentPropDefs)[get(selectedName)].value;
+											},
+											onChange: (color) => updateProp(get(selectedName), color)
+										});
+									};
+
+									if_block(
+										$$anchor,
+										($$render) => {
+											if (get(choices).type == "color") $$render(consequent_8);
+										},
+										$$elseif
+									);
+								}
+							};
+
+							if_block(
+								$$anchor,
+								($$render) => {
+									if (get(choices).type == "select") $$render(consequent_7); else $$render(alternate_4, false);
+								},
+								$$elseif
+							);
+						}
+					};
+
+					if_block(node_10, ($$render) => {
+						if (get(choices).type === "slider") $$render(consequent_5); else $$render(alternate_3, false);
+					});
+				}
+				template_effect(() => set_class(div_7, 1, `prop-section ${get(choices).type ?? ''}`));
+				append($$anchor, div_7);
+			});
+
+			var node_13 = sibling(node_7, 2);
+
+			{
+				var consequent_9 = ($$anchor) => {
+					var div_9 = root_23();
+					let classes_3;
+
+					div_9.__click = [
+						bringToFront,
+						bringableToFront,
+						selectedElemIndex,
+						currentElement,
+						onStyleChanged,
+						currentRule
+					];
+
+					template_effect(($0) => classes_3 = set_class(div_9, 1, 'btn', null, classes_3, $0), [
+						() => ({
+							active: get(bringableToFront)[get(selectedElemIndex)] === true
+						})
+					]);
+
+					append($$anchor, div_9);
+				};
+
+				if_block(node_13, ($$render) => {
+					if (get(currentRule) === "inline" && get(bringableToFront)[get(selectedElemIndex)] !== null) $$render(consequent_9);
+				});
+			}
+
+			var node_14 = sibling(node_13, 2);
+
+			{
+				var consequent_10 = ($$anchor) => {
+					var div_10 = root_24();
+
+					div_10.__click = [deleteElem, currentElement, close];
+					append($$anchor, div_10);
+				};
+
+				if_block(node_14, ($$render) => {
+					if (get(currentRule) === "inline" && inlineDeletable(get(currentElement))) $$render(consequent_10);
+				});
+			}
+			append($$anchor, div_6);
+		};
+
+		if_block(node_6, ($$render) => {
+			if (get(allTypes)[get(selectedElemIndex)]) $$render(consequent_11);
 		});
 	}
+	bind_this(div_1, ($$value) => set(self, $$value), () => get(self));
 
-	$$self.$$set = $$props => {
-		if ('getElems' in $$props) $$invalidate(28, getElems = $$props.getElems);
-		if ('listenOnClick' in $$props) $$invalidate(29, listenOnClick = $$props.listenOnClick);
-		if ('onStyleChanged' in $$props) $$invalidate(30, onStyleChanged = $$props.onStyleChanged);
-		if ('customProps' in $$props) $$invalidate(31, customProps = $$props.customProps);
-		if ('inlineDeletable' in $$props) $$invalidate(0, inlineDeletable = $$props.inlineDeletable);
-		if ('cssRuleFilter' in $$props) $$invalidate(32, cssRuleFilter = $$props.cssRuleFilter);
-		if ('getCssRuleName' in $$props) $$invalidate(1, getCssRuleName = $$props.getCssRuleName);
-	};
+	template_effect(() => {
+		set_attribute(svg, 'width', get(pageDimensions).width);
+		set_attribute(svg, 'height', get(pageDimensions).height);
+		set_attribute(path, 'd', get(pathWithHoles));
+	});
 
-	$$self.$$.update = () => {
-		if ($$self.$$.dirty[1] & /*elementToListen*/ 16) {
-			{
-				if (elementToListen !== null) {
-					init();
-				}
-			}
-		}
-
-		if ($$self.$$.dirty[0] & /*targetsToSearch, selectedElemIndex*/ 72) {
-			$$invalidate(20, currentElement = targetsToSearch[selectedElemIndex][0]);
-		}
-
-		if ($$self.$$.dirty[0] & /*allRules, selectedElemIndex, selectedRuleIndex*/ 208) {
-			$$invalidate(19, currentRule = allRules[selectedElemIndex]?.[selectedRuleIndex]);
-		}
-
-		if ($$self.$$.dirty[0] & /*allTypes, selectedElemIndex, selectedTypeIndex*/ 352 | $$self.$$.dirty[1] & /*curType*/ 32) {
-			{
-				if (allTypes[selectedElemIndex]?.[selectedTypeIndex] !== curType) {
-					$$invalidate(36, curType = allTypes[selectedElemIndex]?.[selectedTypeIndex]);
-				}
-			}
-		}
-
-		if ($$self.$$.dirty[0] & /*selectedRuleIndex, selectedElemIndex*/ 192 | $$self.$$.dirty[1] & /*curType*/ 32) {
-			{
-				if (curType || selectedRuleIndex || selectedElemIndex) {
-					initAndGroup();
-				}
-			}
-		}
-	};
-
-	return [
-		inlineDeletable,
-		getCssRuleName,
-		close,
-		targetsToSearch,
-		allRules,
-		allTypes,
-		selectedElemIndex,
-		selectedRuleIndex,
-		selectedTypeIndex,
-		clickedElement,
-		positionAnchor,
-		self,
-		helperElemWrapper,
-		pathWithHoles,
-		pageDimensions,
-		propsByType,
-		allCurrentPropDefs,
-		bringableToFront,
-		hasDisplayedCustom,
-		currentRule,
-		currentElement,
-		getRuleNamesTransformed,
-		overlayClicked,
-		updateProp,
-		bringToFront,
-		deleteElem,
-		deleteProp,
-		selectRule,
-		getElems,
-		listenOnClick,
-		onStyleChanged,
-		customProps,
-		cssRuleFilter,
-		open,
-		isOpened,
-		elementToListen,
-		curType,
-		div0_binding,
-		svg_binding,
-		click_handler,
-		change_handler,
-		click_handler_1,
-		click_handler_2,
-		change_handler_1,
-		click_handler_3,
-		change_handler_2,
-		change_handler_3,
-		func,
-		div4_binding
-	];
+	append($$anchor, fragment);
+	return pop({ open, close, isOpened });
 }
 
-let InlineStyleEditor$1 = class InlineStyleEditor extends SvelteComponent {
-	constructor(options) {
-		super();
-
-		init(
-			this,
-			options,
-			instance,
-			create_fragment,
-			safe_not_equal,
-			{
-				getElems: 28,
-				listenOnClick: 29,
-				onStyleChanged: 30,
-				customProps: 31,
-				inlineDeletable: 0,
-				cssRuleFilter: 32,
-				getCssRuleName: 1,
-				open: 33,
-				close: 2,
-				isOpened: 34
-			},
-			null,
-			[-1, -1, -1]
-		);
-	}
-
-	get open() {
-		return this.$$.ctx[33];
-	}
-
-	get close() {
-		return this.$$.ctx[2];
-	}
-
-	get isOpened() {
-		return this.$$.ctx[34];
-	}
-};
+delegate(['click', 'change']);
 
 class InlineStyleEditor {
     constructor(options) {
-        return new InlineStyleEditor$1({target: document.body, props: options});
+        const { target = document.body, ...props } = options;
+        return mount(InlineStyleEditor$1, { target, props });
     }
 }
 

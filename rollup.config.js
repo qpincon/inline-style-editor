@@ -28,14 +28,14 @@ export default [
             }],
         plugins: [
             svelte(),
-            resolve(),
+            resolve({ browser: true }),
             commonjs(),
             scss({
-                output: pkg.style,
+                fileName: pkg.style,
                 outputStyle: 'compressed'
             }),
             filesize(),
-            visualizer()
+            visualizer(),
         ]
     },
 ]

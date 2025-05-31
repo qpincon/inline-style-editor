@@ -6,6 +6,7 @@
     import { computeContours } from "../util/boxesContour";
     import ColorPicker from "./ColorPicker.svelte";
     import { getFonts } from "../util/fonts";
+
     const strokeElements = [
         "altGlyph",
         "circle",
@@ -54,16 +55,20 @@
         "background-color": { type: "color" },
     };
 
-    export let getElems = null;
-    export let listenOnClick = false;
-    export let onStyleChanged = () => {};
-    export let customProps = {};
-    export let inlineDeletable = () => true;
-    export let cssRuleFilter = null;
-    export let getCssRuleName = (cssRuleName, element) => {
-        if (cssRuleName === "inline") return "Selected element";
-        return cssRuleName;
-    };
+    // Props
+    const props = $props();
+    const getElems = props.getElems ?? null;
+    const listenOnClick = props.listenOnClick ?? false;
+    const onStyleChanged = props.onStyleChanged ?? (() => {});
+    const customProps = props.customProps ?? {};
+    const inlineDeletable = props.inlineDeletable ?? (() => true);
+    const cssRuleFilter = props.cssRuleFilter ?? null;
+    const getCssRuleName =
+        props.getCssRuleName ??
+        ((cssRuleName, element) => {
+            if (cssRuleName === "inline") return "Selected element";
+            return cssRuleName;
+        });
 
     const typeText = "text";
     const typeBorder = "border";
@@ -79,41 +84,48 @@
     };
     const inputTypeOrder = { slider: 0, select: 1, color: 2 };
 
-    let elementToListen = null;
-    let clickedElement = null;
-    let positionAnchor;
-    let self;
-    let helperElemWrapper;
-    let pathWithHoles = "";
-    let pageDimensions = { width: 0, height: 0 };
-    let targetsToSearch = [[]];
-    let allRules = []; // list of list of CSS rules, for every target element
-    let allTypes = []; // list of list of types (e.g color, border), for every target element
-    let selectedElemIndex = 0;
-    let selectedRuleIndex = 0;
-    let selectedTypeIndex = 0;
-    let propsByType; // propType -> {[props], selected}
-    let allCurrentPropDefs = {}; // propName => selectorDef
-    let bringableToFront = []; // null = not bringable, true = bringable, false = was bringed
-    let hasDisplayedCustom = false;
-    $: {
+    // State variables
+    let elementToListen = $state(null);
+    let clickedElement = $state(null);
+    let positionAnchor = $state();
+    let self = $state();
+    let helperElemWrapper = $state();
+    let pathWithHoles = $state("");
+    let pageDimensions = $state({ width: 0, height: 0 });
+    let targetsToSearch = $state([[]]);
+    let allRules = $state([]); // list of list of CSS rules, for every target element
+    let allTypes = $state([]); // list of list of types (e.g color, border), for every target element
+    let selectedElemIndex = $state(0);
+    let selectedRuleIndex = $state(0);
+    let selectedTypeIndex = $state(0);
+    let propsByType = $state(); // propType -> {[props], selected}
+    let allCurrentPropDefs = $state({}); // propName => selectorDef
+    let bringableToFront = $state([]); // null = not bringable, true = bringable, false = was bringed
+    let hasDisplayedCustom = $state(false);
+
+    // Reactive derived values
+    const currentElement = $derived(targetsToSearch[selectedElemIndex]?.[0]);
+    const currentRule = $derived(allRules[selectedElemIndex]?.[selectedRuleIndex]);
+    let curType = $state();
+
+    // Effects
+    $effect(() => {
         if (elementToListen !== null) {
             init();
         }
-    }
-    $: currentElement = targetsToSearch[selectedElemIndex][0];
-    $: currentRule = allRules[selectedElemIndex]?.[selectedRuleIndex];
-    let curType;
-    $: {
+    });
+
+    $effect(() => {
         if (allTypes[selectedElemIndex]?.[selectedTypeIndex] !== curType) {
             curType = allTypes[selectedElemIndex]?.[selectedTypeIndex];
         }
-    }
-    $: {
+    });
+
+    $effect(() => {
         if (curType || selectedRuleIndex || selectedElemIndex) {
             initAndGroup();
         }
-    }
+    });
 
     onMount(() => {
         close();
@@ -460,7 +472,7 @@
     xmlns:xlink="http://www.w3.org/1999/xlink"
     width={pageDimensions.width}
     height={pageDimensions.height}
-    on:click={overlayClicked}
+    onclick={overlayClicked}
 >
     <clipPath id="overlay-clip" clip-rule="evenodd">
         <path d={pathWithHoles} />
@@ -469,14 +481,14 @@
 </svg>
 
 <div class="ise" bind:this={self}>
-    <div class="close-button" on:click={close}>x</div>
+    <div class="close-button" onclick={close}>x</div>
     {#if targetsToSearch.length > 1}
         <div class="select-tab">
             <b> Element </b>
             {#each targetsToSearch as [_, name], elemIndex}
                 <span
                     class:selected={selectedElemIndex === elemIndex}
-                    on:click={() => {
+                    onclick={() => {
                         selectedElemIndex = elemIndex;
                         selectedRuleIndex = 0;
                     }}
@@ -489,7 +501,7 @@
     <div class="select-tab">
         <b> Applied to: </b>
         {#if nbChars(getRuleNamesTransformed(allRules[selectedElemIndex])) > 30}
-            <select on:change={(e) => selectRule(e.target.value)}>
+            <select onchange={(e) => selectRule(e.target.value)}>
                 {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
                     <option selected={selectedRuleIndex === ruleIndex} value={ruleIndex}
                         >{getCssRuleName(ruleName, clickedElement)}</option
@@ -501,7 +513,7 @@
                 <span
                     title={ruleName}
                     class:selected={selectedRuleIndex === ruleIndex}
-                    on:click={() => {
+                    onclick={() => {
                         selectRule(ruleIndex);
                     }}
                 >
@@ -517,7 +529,7 @@
             {#if type !== "custom" || (currentRule === "inline" && type === "custom" && hasDisplayedCustom)}
                 <span
                     class:selected={selectedTypeIndex === typeIndex}
-                    on:click={() => {
+                    onclick={() => {
                         selectedTypeIndex = typeIndex;
                     }}
                 >
@@ -534,7 +546,7 @@
                     <div class="prop-name">
                         {#if choices.props.length > 1}
                             <select
-                                on:change={async (e) => {
+                                onchange={async (e) => {
                                     choices.selected = e.target.value;
                                     await tick();
                                 }}
@@ -552,7 +564,7 @@
                         {:else}
                             <span> {pascalCaseToSentence(selectedName)} </span>
                         {/if}
-                        <span class="delete" on:click={() => deleteProp(selectedName)}>✕</span>
+                        <span class="delete" onclick={() => deleteProp(selectedName)}>✕</span>
                     </div>
                     {#if choices.type === "slider"}
                         <input
@@ -561,7 +573,7 @@
                             max={allCurrentPropDefs[selectedName].max}
                             step={allCurrentPropDefs[selectedName].step || 1}
                             value={allCurrentPropDefs[selectedName].value}
-                            on:change={(e) =>
+                            onchange={(e) =>
                                 updateProp(
                                     selectedName,
                                     e.target.value,
@@ -574,7 +586,7 @@
                         </span>
                     {:else if choices.type == "select"}
                         {@const choices = allCurrentPropDefs[selectedName].choices()}
-                        <select on:change={(e) => updateProp(selectedName, e.target.value)}>
+                        <select onchange={(e) => updateProp(selectedName, e.target.value)}>
                             {#if !choices.includes(allCurrentPropDefs[selectedName].value)}
                                 <option selected="true"> --- </option>
                             {/if}
@@ -593,12 +605,12 @@
                 </div>
             {/each}
             {#if currentRule === "inline" && bringableToFront[selectedElemIndex] !== null}
-                <div class="btn" class:active={bringableToFront[selectedElemIndex] === true} on:click={bringToFront}>
+                <div class="btn" class:active={bringableToFront[selectedElemIndex] === true} onclick={bringToFront}>
                     Bring to front
                 </div>
             {/if}
             {#if currentRule === "inline" && inlineDeletable(currentElement)}
-                <div class="btn delete-elem" on:click={deleteElem}>Delete element</div>
+                <div class="btn delete-elem" onclick={deleteElem}>Delete element</div>
             {/if}
         </div>
     {/if}
