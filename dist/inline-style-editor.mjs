@@ -3825,7 +3825,6 @@ function pascalCaseToSentence(str) {
 
 function nbChars(strArray) {
     if (!strArray) return 0;
-    console.log(strArray, strArray.reduce((acc, str) => acc + str.length, 0));
     return strArray.reduce((acc, str) => acc + str.length, 0);
 }
 
@@ -6026,8 +6025,6 @@ function InlineStyleEditor$1($$anchor, $$props) {
 	}
 
 	function selectRule(ruleIndex) {
-		console.log("selectrule", ruleIndex);
-
 		const newRule = get(allRules)[get(selectedElemIndex)]?.[ruleIndex];
 
 		if (newRule !== "inline" && get(selectedTypeIndex) === get(allTypes)[get(selectedElemIndex)].length - 1) {
