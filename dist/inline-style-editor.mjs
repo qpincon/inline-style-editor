@@ -5504,7 +5504,8 @@ function InlineStyleEditor$1($$anchor, $$props) {
 		"text",
 		"textPath",
 		"tref",
-		"tspan"
+		"tspan",
+		"g"
 	];
 
 	const borderProps = [
@@ -5803,7 +5804,7 @@ function InlineStyleEditor$1($$anchor, $$props) {
 				const elem = elemDef[0];
 				const types = [];
 
-				if (elem.firstChild && (elem.firstChild.nodeType === 3 || elem.firstChild.tagName === "tspan")) {
+				if (elem.firstChild && (!elem.firstElementChild && elem.firstChild.nodeType === 3 || elem.firstChild.tagName === "tspan")) {
 					// Node.TEXT_NODE
 					types.push(typeText);
 				}
