@@ -401,7 +401,8 @@
                     if (ruleName.includes('.adm1')) return 'All regions';
                     if (ruleName === "inline") return "Selected element";
                     return ruleName;
-                }
+                },
+                ignoredProps: ["stroke-linejoin"]
             }
         );
 
