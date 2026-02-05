@@ -59,11 +59,12 @@ new InlineStyleEditor({
 `customProps` is an object on the form of `propName` (as displayed in the editor) -> `definition`. 
 
 `definition` is an object defining the property to edit and the used widget:
-- `type`: One of `slider`, `select` or `color`. 
+- `type`: One of `slider`, `select` or `color`.
     - If `slider`, `min`, `max` and `step` must be defined (floats).
     - If `select`, `choices` must be defined. It is a function returning a list to select from
-- `getter`: A function to get the property value. Takes the edited HTMLElement as first argument. If `null` is returned, the widget will not be awailable for the current element.
+- `getter`: A function to get the property value. Takes the edited HTMLElement as first argument. If `null` is returned, the widget will not be available for the current element.
 - `setter`: A function to set the property value. Takes the edited HTMLElement as first argument, and the new value as second argument.
+- `defaultValue`: (optional) The value to apply when clicking "Reset to default". If not specified, the property will simply be removed.
 
 _Example, to edit the pathLength of an SVG element using a slider_:
 ```js
@@ -71,6 +72,7 @@ new InlineStyleEditor({
     customProps: {
         'pathLength': {
             type: 'slider', min: 1, max: 500, step: 1,
+            defaultValue: 100,
             getter: (el) => {
                 // disable when elem is not a SVG geometry
                 if (!el.getTotalLength) return null;

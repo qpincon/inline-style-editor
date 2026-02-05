@@ -479,21 +479,35 @@
         close();
     }
     function deleteProp(propName) {
-        if (currentRule === "inline") {
-            currentElement.style.removeProperty(propName);
-        } else {
-            currentRule.style.removeProperty(propName);
-        }
-        onStyleChanged(currentElement, currentRule, propName, null);
-        // Update the displayed value without rebuilding (which would reset selection)
         const propDef = allCurrentPropDefs[propName];
-        if (propDef) {
-            const propSelectType = propDef.type;
-            let retrieveType = "number";
-            if (propSelectType === "color") retrieveType = "rgb";
-            else if (propSelectType === "select") retrieveType = "raw";
-            propDef.displayed = getComputedPropValue(currentElement, propName, "raw");
-            propDef.value = getComputedPropValue(currentElement, propName, retrieveType);
+        const isCustomProp = propName in customProps;
+
+        // Check if custom prop has a defaultValue
+        if (isCustomProp && propDef && "defaultValue" in customProps[propName]) {
+            const defaultValue = customProps[propName].defaultValue;
+            if (propDef.setter) {
+                propDef.setter(currentElement, defaultValue);
+            }
+            propDef.value = defaultValue;
+            propDef.displayed = defaultValue;
+            onStyleChanged(currentElement, currentRule, propName, defaultValue);
+        } else {
+            // Standard CSS property reset
+            if (currentRule === "inline") {
+                currentElement.style.removeProperty(propName);
+            } else {
+                currentRule.style.removeProperty(propName);
+            }
+            onStyleChanged(currentElement, currentRule, propName, null);
+            // Update the displayed value without rebuilding (which would reset selection)
+            if (propDef) {
+                const propSelectType = propDef.type;
+                let retrieveType = "number";
+                if (propSelectType === "color") retrieveType = "rgb";
+                else if (propSelectType === "select") retrieveType = "raw";
+                propDef.displayed = getComputedPropValue(currentElement, propName, "raw");
+                propDef.value = getComputedPropValue(currentElement, propName, retrieveType);
+            }
         }
         updateHelpers();
     }

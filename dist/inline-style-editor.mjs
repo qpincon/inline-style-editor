@@ -6085,24 +6085,39 @@ function InlineStyleEditor$1($$anchor, $$props) {
 	}
 
 	function deleteProp(propName) {
-		if (get(currentRule) === "inline") {
-			get(currentElement).style.removeProperty(propName);
-		} else {
-			get(currentRule).style.removeProperty(propName);
-		}
-
-		onStyleChanged(get(currentElement), get(currentRule), propName, null);
-
-		// Update the displayed value without rebuilding (which would reset selection)
 		const propDef = get(allCurrentPropDefs)[propName];
+		const isCustomProp = propName in customProps;
 
-		if (propDef) {
-			const propSelectType = propDef.type;
-			let retrieveType = "number";
+		// Check if custom prop has a defaultValue
+		if (isCustomProp && propDef && "defaultValue" in customProps[propName]) {
+			const defaultValue = customProps[propName].defaultValue;
 
-			if (propSelectType === "color") retrieveType = "rgb"; else if (propSelectType === "select") retrieveType = "raw";
-			propDef.displayed = getComputedPropValue(get(currentElement), propName, "raw");
-			propDef.value = getComputedPropValue(get(currentElement), propName, retrieveType);
+			if (propDef.setter) {
+				propDef.setter(get(currentElement), defaultValue);
+			}
+
+			propDef.value = defaultValue;
+			propDef.displayed = defaultValue;
+			onStyleChanged(get(currentElement), get(currentRule), propName, defaultValue);
+		} else {
+			// Standard CSS property reset
+			if (get(currentRule) === "inline") {
+				get(currentElement).style.removeProperty(propName);
+			} else {
+				get(currentRule).style.removeProperty(propName);
+			}
+
+			onStyleChanged(get(currentElement), get(currentRule), propName, null);
+
+			// Update the displayed value without rebuilding (which would reset selection)
+			if (propDef) {
+				const propSelectType = propDef.type;
+				let retrieveType = "number";
+
+				if (propSelectType === "color") retrieveType = "rgb"; else if (propSelectType === "select") retrieveType = "raw";
+				propDef.displayed = getComputedPropValue(get(currentElement), propName, "raw");
+				propDef.value = getComputedPropValue(get(currentElement), propName, retrieveType);
+			}
 		}
 
 		updateHelpers();
