@@ -173,7 +173,7 @@
             }
         });
 
-        propsByType = Object.entries(_allCurrentPropDefs)
+        const _propsByType = Object.entries(_allCurrentPropDefs)
             .reduce((byType, [propName, selectorDef]) => {
                 const selectorType = selectorDef.type;
                 const existing = byType.find((x) => x.type === selectorType);
@@ -191,6 +191,18 @@
                 if (inputTypeOrder[a.type] > inputTypeOrder[b.type]) return 1;
                 return 0;
             });
+
+        // Pre-select fill over stroke if the element has a non-transparent fill
+        const colorGroup = _propsByType.find((g) => g.type === "color");
+        if (colorGroup) {
+            const fillIndex = colorGroup.props.indexOf("fill");
+            const fillValue = _allCurrentPropDefs["fill"]?.value;
+            if (fillIndex !== -1 && fillValue && fillValue !== "#00000000") {
+                colorGroup.selected = fillIndex;
+            }
+        }
+
+        propsByType = _propsByType;
         allCurrentPropDefs = _allCurrentPropDefs;
         updateHelpers();
     }
