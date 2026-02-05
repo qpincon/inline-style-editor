@@ -52,6 +52,7 @@ new InlineStyleEditor({
 | cssRuleFilter      | Function      |   A function taking an DOM element and the css selector for the CSS rule that will be editable, that should return `false` if the rule should not display in the editor  |
 | getCssRuleName      | Function      |   A function taking a CSS text selector and the element on which the editor opened, returning a new string for this selector to display in the editor   |
 | customProps      | Object      |   An object defining custom properties to edit. See below. |
+| ignoredProps      | Array      |   An array of CSS property names to exclude from the editor (e.g., `['border-style', 'stroke-dasharray']`). |
 
 #### customProps
 

@@ -70,6 +70,7 @@
             if (cssRuleName === "inline") return "Selected element";
             return cssRuleName;
         });
+    const ignoredProps = props.ignoredProps ?? [];
 
     const typeText = "text";
     const typeBorder = "border";
@@ -154,6 +155,7 @@
     function initAndGroup() {
         const allProps = { ...cssPropByType, ...customProps };
         const _allCurrentPropDefs = pick(allProps, propByType[curType]);
+        ignoredProps.forEach((prop) => delete _allCurrentPropDefs[prop]);
         Object.keys(_allCurrentPropDefs).forEach((key) => {
             const propSelectType = _allCurrentPropDefs[key].type;
             let retrieveType = "number";
