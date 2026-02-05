@@ -549,8 +549,9 @@
                     <div class="prop-name">
                         {#if choices.props.length > 1}
                             <select
+                                value={choices.selected}
                                 onchange={async (e) => {
-                                    choices.selected = e.target.value;
+                                    choices.selected = Number(e.target.value);
                                     await tick();
                                 }}
                             >
