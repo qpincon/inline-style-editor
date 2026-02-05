@@ -140,6 +140,43 @@
         border-radius: 3px;
     }
 
+    .icon-selector {
+        display: flex;
+        gap: 2px;
+        align-items: center;
+    }
+
+    .icon-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        padding: 3px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        color: #718096;
+
+        &:hover {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        &.selected {
+            background: white;
+            border-color: #d8dae1;
+            color: #0069d9;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        svg {
+            width: 16px;
+            height: 16px;
+        }
+    }
+
     .layout_default.picker_wrapper {
         background: none;
         box-shadow: none;

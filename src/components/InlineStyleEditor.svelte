@@ -56,6 +56,23 @@
         "background-color": { type: "color" },
     };
 
+    const propertyIcons = {
+        stroke: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="2" y1="14" x2="14" y2="2"/></svg>`,
+        fill: `<svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="12" rx="2"/></svg>`,
+        color: `<svg viewBox="0 0 16 16" fill="currentColor"><text x="3" y="11" font-size="10" font-weight="bold">A</text><rect x="2" y="13" width="12" height="2"/></svg>`,
+        "border-color": `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/></svg>`,
+        "background-color": `<svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="10" height="10" rx="1" opacity="0.5"/><rect x="2" y="2" width="10" height="10" rx="1"/></svg>`,
+        "border-radius": `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 10 L2 2 L10 2" stroke-linecap="round"/><path d="M2 10 Q2 14 6 14 L14 14" stroke-linecap="round"/></svg>`,
+        "border-width": `<svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="2"/><rect x="2" y="7" width="12" height="3"/><rect x="2" y="13" width="12" height="1"/></svg>`,
+        "border-style": `<svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="1.5"/><rect x="2" y="7" width="3" height="1.5"/><rect x="7" y="7" width="3" height="1.5"/><rect x="2" y="12" width="1.5" height="1.5"/><rect x="5" y="12" width="1.5" height="1.5"/><rect x="8" y="12" width="1.5" height="1.5"/><rect x="11" y="12" width="1.5" height="1.5"/></svg>`,
+        "font-size": `<svg viewBox="0 0 16 16" fill="currentColor"><text x="1" y="12" font-size="12" font-weight="bold">T</text><text x="9" y="12" font-size="8" font-weight="bold">T</text></svg>`,
+        "font-weight": `<svg viewBox="0 0 16 16" fill="currentColor"><text x="3" y="13" font-size="14" font-weight="bold">B</text></svg>`,
+        "font-family": `<svg viewBox="0 0 16 16" fill="currentColor"><text x="4" y="13" font-size="14" font-style="italic" font-family="serif">F</text></svg>`,
+        "stroke-width": `<svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="2"/><rect x="2" y="7" width="12" height="3"/><rect x="2" y="13" width="12" height="1"/></svg>`,
+        "stroke-dasharray": `<svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="7" width="4" height="2"/><rect x="7" y="7" width="4" height="2"/><rect x="13" y="7" width="2" height="2"/></svg>`,
+        "stroke-linejoin": `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polyline points="3,12 8,4 13,12"/></svg>`,
+    };
+
     // Props
     const props = $props();
     const getElems = props.getElems ?? null;
@@ -566,27 +583,27 @@
                 <div class="prop-section {choices.type}">
                     <div class="prop-name">
                         {#if choices.props.length > 1}
-                            <select
-                                value={choices.selected}
-                                onchange={async (e) => {
-                                    choices.selected = Number(e.target.value);
-                                    await tick();
-                                }}
-                            >
+                            <div class="icon-selector">
                                 {#each choices.props as propName, i}
-                                    <option selected={i === choices.selected} value={i}>
-                                        {#if choices.type === "color"}
-                                            {capitalizeFirstLetter(propName)} color
-                                        {:else}
-                                            {pascalCaseToSentence(propName)}
-                                        {/if}
-                                    </option>
+                                    <button
+                                        class="icon-btn"
+                                        class:selected={i === choices.selected}
+                                        title={choices.type === "color"
+                                            ? `${capitalizeFirstLetter(propName)} color`
+                                            : pascalCaseToSentence(propName)}
+                                        onclick={async () => {
+                                            choices.selected = i;
+                                            await tick();
+                                        }}
+                                    >
+                                        {@html propertyIcons[propName]}
+                                    </button>
                                 {/each}
-                            </select>
+                            </div>
                         {:else}
-                            <span> {pascalCaseToSentence(selectedName)} </span>
+                            <span>{pascalCaseToSentence(selectedName)}</span>
                         {/if}
-                        <span class="delete" onclick={() => deleteProp(selectedName)}>✕</span>
+                        <span class="delete" title="Reset to default" onclick={() => deleteProp(selectedName)}>✕</span>
                     </div>
                     {#if choices.type === "slider"}
                         <input
