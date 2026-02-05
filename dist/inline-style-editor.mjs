@@ -6092,7 +6092,20 @@ function InlineStyleEditor$1($$anchor, $$props) {
 		}
 
 		onStyleChanged(get(currentElement), get(currentRule), propName, null);
-		initAndGroup();
+
+		// Update the displayed value without rebuilding (which would reset selection)
+		const propDef = get(allCurrentPropDefs)[propName];
+
+		if (propDef) {
+			const propSelectType = propDef.type;
+			let retrieveType = "number";
+
+			if (propSelectType === "color") retrieveType = "rgb"; else if (propSelectType === "select") retrieveType = "raw";
+			propDef.displayed = getComputedPropValue(get(currentElement), propName, "raw");
+			propDef.value = getComputedPropValue(get(currentElement), propName, retrieveType);
+		}
+
+		updateHelpers();
 	}
 
 	function selectRule(ruleIndex) {

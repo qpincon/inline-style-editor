@@ -485,7 +485,17 @@
             currentRule.style.removeProperty(propName);
         }
         onStyleChanged(currentElement, currentRule, propName, null);
-        initAndGroup();
+        // Update the displayed value without rebuilding (which would reset selection)
+        const propDef = allCurrentPropDefs[propName];
+        if (propDef) {
+            const propSelectType = propDef.type;
+            let retrieveType = "number";
+            if (propSelectType === "color") retrieveType = "rgb";
+            else if (propSelectType === "select") retrieveType = "raw";
+            propDef.displayed = getComputedPropValue(currentElement, propName, "raw");
+            propDef.value = getComputedPropValue(currentElement, propName, retrieveType);
+        }
+        updateHelpers();
     }
 
     function selectRule(ruleIndex) {
