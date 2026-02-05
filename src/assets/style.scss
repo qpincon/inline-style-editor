@@ -38,21 +38,13 @@
         margin: auto;
     }
 
-    .prop-name {
-        display: flex;
-        align-items: center;
-
-        &>span {
-            margin-left: 4px;
-        }
+    .current-value {
+        font-size: 12px;
+        color: #64748b;
+        min-width: 40px;
+        text-align: right;
     }
 
-    .delete {
-        cursor: pointer;
-        font-size: 20px;
-        margin: 0 4px;
-        margin-bottom: 2px;
-    }
 
     .select-tab {
         display: flex;
@@ -91,19 +83,98 @@
     }
 
     .editor .prop-section {
+        background: #f8fafc;
+        border-radius: 6px;
+        padding: 8px;
+        margin: 6px 0;
+
+        &:first-child {
+            margin-top: 0;
+        }
+
+        &.slider {
+            .prop-header + input[type="range"] {
+                display: inline-block;
+                width: calc(100% - 50px);
+                vertical-align: middle;
+            }
+
+            .current-value {
+                display: inline-block;
+                vertical-align: middle;
+            }
+        }
+    }
+
+    .prop-header {
         display: flex;
         align-items: center;
-        margin: 5px 0;
-        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 6px;
     }
 
-    .editor .prop-section>span {
-        margin: 0 5px;
-    }
-
-    .editor .prop-section :first-child {
+    .prop-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         color: #5d5d5d;
         font-weight: bold;
+    }
+
+    .selected-label {
+        font-size: 12px;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .close-button,
+    .delete-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        border: none;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+
+        svg {
+            width: 12px;
+            height: 12px;
+        }
+    }
+
+    .delete-btn {
+        border-radius: 4px;
+        background: transparent;
+        color: #94a3b8;
+
+        &:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+    }
+
+    .close-button {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        border-radius: 50%;
+        background: #64748b;
+        color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+        &:hover {
+            background: #475569;
+            transform: scale(1.1);
+        }
+
+        svg {
+            width: 10px;
+            height: 10px;
+        }
     }
 
     .editor .btn {
@@ -125,21 +196,6 @@
         padding: 5px;
     }
 
-    .close-button {
-        position: absolute;
-        top: -7px;
-        right: -7px;
-        background-color: #dbdbdb;
-        color: #818181;
-        width: 15px;
-        height: 15px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        border-radius: 3px;
-    }
-
     .icon-selector {
         display: flex;
         gap: 2px;
@@ -150,25 +206,25 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 24px;
-        height: 24px;
-        padding: 3px;
-        border: 1px solid transparent;
-        border-radius: 4px;
+        width: 26px;
+        height: 26px;
+        padding: 4px;
+        border: 1.5px solid transparent;
+        border-radius: 5px;
         background: transparent;
         cursor: pointer;
-        color: #718096;
+        color: #94a3b8;
 
         &:hover {
             background: #e2e8f0;
-            color: #4a5568;
+            color: #475569;
         }
 
         &.selected {
             background: white;
-            border-color: #d8dae1;
-            color: #0069d9;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border-color: #3b82f6;
+            color: #2563eb;
+            box-shadow: 0 1px 3px 0 rgba(59, 130, 246, 0.3), 0 0 0 1px rgba(59, 130, 246, 0.1);
         }
 
         svg {

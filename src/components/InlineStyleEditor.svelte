@@ -515,7 +515,11 @@
 </svg>
 
 <div class="ise" bind:this={self}>
-    <div class="close-button" onclick={close}>x</div>
+    <button class="close-button" title="Close" onclick={close}>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M4 4 L12 12 M12 4 L4 12" />
+        </svg>
+    </button>
     {#if targetsToSearch.length > 1}
         <div class="select-tab">
             <b> Element </b>
@@ -581,29 +585,40 @@
             {#each propsByType as choices}
                 {@const selectedName = choices.props[choices.selected]}
                 <div class="prop-section {choices.type}">
-                    <div class="prop-name">
-                        {#if choices.props.length > 1}
-                            <div class="icon-selector">
-                                {#each choices.props as propName, i}
-                                    <button
-                                        class="icon-btn"
-                                        class:selected={i === choices.selected}
-                                        title={choices.type === "color"
-                                            ? `${capitalizeFirstLetter(propName)} color`
-                                            : pascalCaseToSentence(propName)}
-                                        onclick={async () => {
-                                            choices.selected = i;
-                                            await tick();
-                                        }}
-                                    >
-                                        {@html propertyIcons[propName]}
-                                    </button>
-                                {/each}
-                            </div>
-                        {:else}
-                            <span>{pascalCaseToSentence(selectedName)}</span>
-                        {/if}
-                        <span class="delete" title="Reset to default" onclick={() => deleteProp(selectedName)}>✕</span>
+                    <div class="prop-header">
+                        <div class="prop-name">
+                            {#if choices.props.length > 1}
+                                <div class="icon-selector">
+                                    {#each choices.props as propName, i}
+                                        <button
+                                            class="icon-btn"
+                                            class:selected={i === choices.selected}
+                                            title={choices.type === "color"
+                                                ? `${capitalizeFirstLetter(propName)} color`
+                                                : pascalCaseToSentence(propName)}
+                                            onclick={async () => {
+                                                choices.selected = i;
+                                                await tick();
+                                            }}
+                                        >
+                                            {@html propertyIcons[propName]}
+                                        </button>
+                                    {/each}
+                                </div>
+                                <span class="selected-label"
+                                    >{choices.type === "color"
+                                        ? `${capitalizeFirstLetter(selectedName)} color`
+                                        : pascalCaseToSentence(selectedName)}</span
+                                >
+                            {:else}
+                                <span>{pascalCaseToSentence(selectedName)}</span>
+                            {/if}
+                        </div>
+                        <button class="delete-btn" title="Reset to default" onclick={() => deleteProp(selectedName)}>
+                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4 L12 12 M12 4 L4 12" />
+                            </svg>
+                        </button>
                     </div>
                     {#if choices.type === "slider"}
                         <input

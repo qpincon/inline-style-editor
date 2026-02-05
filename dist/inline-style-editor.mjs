@@ -2559,18 +2559,6 @@ function from_html(content, flags) {
 	};
 }
 
-/**
- * Don't mark this as side-effect-free, hydration needs to walk all nodes
- * @param {any} value
- */
-function text(value = '') {
-	{
-		var t = create_text(value + '');
-		assign_nodes(t, t);
-		return t;
-	}
-}
-
 function comment() {
 
 	var frag = document.createDocumentFragment();
@@ -3276,6 +3264,63 @@ function link(state, prev, next) {
 		next.prev = prev;
 		next.e.prev = prev && prev.e;
 	}
+}
+
+/** @import { Effect, TemplateNode } from '#client' */
+
+/**
+ * @param {Element | Text | Comment} node
+ * @param {() => string} get_value
+ * @param {boolean} [svg]
+ * @param {boolean} [mathml]
+ * @param {boolean} [skip_warning]
+ * @returns {void}
+ */
+function html(node, get_value, svg = false, mathml = false, skip_warning = false) {
+	var anchor = node;
+
+	var value = '';
+
+	template_effect(() => {
+		var effect = /** @type {Effect} */ (active_effect);
+
+		if (value === (value = get_value() ?? '')) {
+			return;
+		}
+
+		if (effect.nodes_start !== null) {
+			remove_effect_dom(effect.nodes_start, /** @type {TemplateNode} */ (effect.nodes_end));
+			effect.nodes_start = effect.nodes_end = null;
+		}
+
+		if (value === '') return;
+
+		var html = value + '';
+		if (svg) html = `<svg>${html}</svg>`;
+		else if (mathml) html = `<math>${html}</math>`;
+
+		// Don't use create_fragment_with_script_from_html here because that would mean script tags are executed.
+		// @html is basically `.innerHTML = ...` and that doesn't execute scripts either due to security reasons.
+		/** @type {DocumentFragment | Element} */
+		var node = create_fragment_from_html(html);
+
+		if (svg || mathml) {
+			node = /** @type {Element} */ (get_first_child(node));
+		}
+
+		assign_nodes(
+			/** @type {TemplateNode} */ (get_first_child(node)),
+			/** @type {TemplateNode} */ (node.lastChild)
+		);
+
+		if (svg || mathml) {
+			while (get_first_child(node)) {
+				anchor.before(/** @type {Node} */ (get_first_child(node)));
+			}
+		} else {
+			anchor.before(node);
+		}
+	});
 }
 
 const whitespace = [...' \t\n\r\f\u00a0\u000b\ufeff'];
@@ -5456,22 +5501,18 @@ function deleteElem(__2, currentElement, close) {
 var root_2 = from_html(`<span> </span>`);
 var root_1 = from_html(`<div class="select-tab"><b>Element</b> <!></div>`);
 var on_change = (e, selectRule) => selectRule(e.target.value);
-var root_4 = from_html(`<option> </option>`);
-var root_3 = from_html(`<select></select>`);
-var root_6 = from_html(`<span> </span>`);
-var root_8 = from_html(`<span> </span>`);
-
-var on_change_1 = async (e, choices) => {
-	(get(choices).selected = e.target.value);
-	await tick();
-};
-
-var root_12 = from_html(`<option><!></option>`);
-var root_11 = from_html(`<select></select>`);
+var root_5 = from_html(`<option> </option>`);
+var root_4 = from_html(`<select></select>`);
+var root_7 = from_html(`<span> </span>`);
+var root_3 = from_html(`<div class="select-tab"><b>Applied to:</b> <!></div>`);
+var root_10 = from_html(`<span> </span>`);
+var root_8 = from_html(`<div class="select-tab"><b>Property type:</b> <!></div>`);
+var root_14 = from_html(`<button><!></button>`);
+var root_13 = from_html(`<div class="icon-selector"></div> <span class="selected-label"> </span>`, 1);
 var root_15 = from_html(`<span> </span>`);
 var on_click = (__3, deleteProp, selectedName) => deleteProp(get(selectedName));
 
-var on_change_2 = (
+var on_change_1 = (
 	e,
 	updateProp,
 	selectedName,
@@ -5479,15 +5520,15 @@ var on_change_2 = (
 ) => updateProp(get(selectedName), e.target.value, get(allCurrentPropDefs)[get(selectedName)].suffix, e.target);
 
 var root_16 = from_html(`<input type="range"/> <span class="current-value"> </span>`, 1);
-var on_change_3 = (e, updateProp, selectedName) => updateProp(get(selectedName), e.target.value);
+var on_change_2 = (e, updateProp, selectedName) => updateProp(get(selectedName), e.target.value);
 var root_19 = from_html(`<option selected="true">---</option>`);
 var root_20 = from_html(`<option> </option>`);
 var root_18 = from_html(`<select><!><!></select>`);
-var root_10 = from_html(`<div><div class="prop-name"><!> <span class="delete">✕</span></div> <!></div>`);
+var root_12 = from_html(`<div><div class="prop-header"><div class="prop-name"><!></div> <button class="delete-btn" title="Reset to default"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4 L12 12 M12 4 L4 12"></path></svg></button></div> <!></div>`);
 var root_23 = from_html(`<div>Bring to front</div>`);
 var root_24 = from_html(`<div class="btn delete-elem">Delete element</div>`);
-var root_9 = from_html(`<div class="editor"><!> <!> <!></div>`);
-var root = from_html(`<div style="position: absolute;"></div> <svg class="ise-helper-wrapper" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><clipPath id="overlay-clip" clip-rule="evenodd"><path></path></clipPath><rect y="0" x="0" height="100%" width="100%" class="overlay-over"></rect></svg> <div class="ise"><div class="close-button">x</div> <!> <div class="select-tab"><b>Applied to:</b> <!></div> <div class="select-tab"><b>Property type:</b> <!></div> <!></div>`, 1);
+var root_11 = from_html(`<div class="editor"><!> <!> <!></div>`);
+var root = from_html(`<div style="position: absolute;"></div> <svg class="ise-helper-wrapper" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><clipPath id="overlay-clip" clip-rule="evenodd"><path></path></clipPath><rect y="0" x="0" height="100%" width="100%" class="overlay-over"></rect></svg> <div class="ise"><button class="close-button" title="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4 L12 12 M12 4 L4 12"></path></svg></button> <!> <!> <!> <!></div>`, 1);
 
 function InlineStyleEditor$1($$anchor, $$props) {
 	push($$props, true);
@@ -5590,6 +5631,23 @@ function InlineStyleEditor$1($$anchor, $$props) {
 		},
 		"background-color": { type: "color" }
 	};
+
+	const propertyIcons = {
+		stroke: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="2" y1="14" x2="14" y2="2"/></svg>`,
+		fill: `<svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="12" rx="2"/></svg>`,
+		color: `<svg viewBox="0 0 16 16" fill="currentColor"><text x="3" y="11" font-size="10" font-weight="bold">A</text><rect x="2" y="13" width="12" height="2"/></svg>`,
+		"border-color": `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/></svg>`,
+		"background-color": `<svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="10" height="10" rx="1" opacity="0.5"/><rect x="2" y="2" width="10" height="10" rx="1"/></svg>`,
+		"border-radius": `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 10 L2 2 L10 2" stroke-linecap="round"/><path d="M2 10 Q2 14 6 14 L14 14" stroke-linecap="round"/></svg>`,
+		"border-width": `<svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="2"/><rect x="2" y="7" width="12" height="3"/><rect x="2" y="13" width="12" height="1"/></svg>`,
+		"border-style": `<svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="1.5"/><rect x="2" y="7" width="3" height="1.5"/><rect x="7" y="7" width="3" height="1.5"/><rect x="2" y="12" width="1.5" height="1.5"/><rect x="5" y="12" width="1.5" height="1.5"/><rect x="8" y="12" width="1.5" height="1.5"/><rect x="11" y="12" width="1.5" height="1.5"/></svg>`,
+		"font-size": `<svg viewBox="0 0 16 16" fill="currentColor"><text x="1" y="12" font-size="12" font-weight="bold">T</text><text x="9" y="12" font-size="8" font-weight="bold">T</text></svg>`,
+		"font-weight": `<svg viewBox="0 0 16 16" fill="currentColor"><text x="3" y="13" font-size="14" font-weight="bold">B</text></svg>`,
+		"font-family": `<svg viewBox="0 0 16 16" fill="currentColor"><text x="4" y="13" font-size="14" font-style="italic" font-family="serif">F</text></svg>`,
+		"stroke-width": `<svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="2"/><rect x="2" y="7" width="12" height="3"/><rect x="2" y="13" width="12" height="1"/></svg>`,
+		"stroke-dasharray": `<svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="7" width="4" height="2"/><rect x="7" y="7" width="4" height="2"/><rect x="13" y="7" width="2" height="2"/></svg>`,
+		"stroke-linejoin": `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polyline points="3,12 8,4 13,12"/></svg>`
+	};
 	const getElems = $$props.getElems ?? null;
 	const listenOnClick = $$props.listenOnClick ?? false;
 	const onStyleChanged = $$props.onStyleChanged ?? (() => {});
@@ -5602,6 +5660,7 @@ function InlineStyleEditor$1($$anchor, $$props) {
 		return cssRuleName;
 	});
 
+	const ignoredProps = $$props.ignoredProps ?? [];
 	const typeText = "text";
 	const typeBorder = "border";
 	const typeStroke = "stroke";
@@ -5690,6 +5749,8 @@ function InlineStyleEditor$1($$anchor, $$props) {
 		const allProps = { ...cssPropByType, ...customProps };
 		const _allCurrentPropDefs = pick(allProps, propByType[get(curType)]);
 
+		ignoredProps.forEach((prop) => delete _allCurrentPropDefs[prop]);
+
 		Object.keys(_allCurrentPropDefs).forEach((key) => {
 			const propSelectType = _allCurrentPropDefs[key].type;
 			let retrieveType = "number";
@@ -5712,30 +5773,39 @@ function InlineStyleEditor$1($$anchor, $$props) {
 			}
 		});
 
-		set(
-			propsByType,
-			Object.entries(_allCurrentPropDefs).reduce(
-				(byType, [propName, selectorDef]) => {
-					const selectorType = selectorDef.type;
-					const existing = byType.find((x) => x.type === selectorType);
+		const _propsByType = Object.entries(_allCurrentPropDefs).reduce(
+			(byType, [propName, selectorDef]) => {
+				const selectorType = selectorDef.type;
+				const existing = byType.find((x) => x.type === selectorType);
 
-					if (!existing) byType.push({
-						selected: 0,
-						props: [propName],
-						type: selectorType
-					}); else existing.props.push(propName);
+				if (!existing) byType.push({
+					selected: 0,
+					props: [propName],
+					type: selectorType
+				}); else existing.props.push(propName);
 
-					return byType;
-				},
-				[]
-			).sort((a, b) => {
-				if (inputTypeOrder[a.type] < inputTypeOrder[b.type]) return -1;
-				if (inputTypeOrder[a.type] > inputTypeOrder[b.type]) return 1;
-				return 0;
-			}),
-			true
-		);
+				return byType;
+			},
+			[]
+		).sort((a, b) => {
+			if (inputTypeOrder[a.type] < inputTypeOrder[b.type]) return -1;
+			if (inputTypeOrder[a.type] > inputTypeOrder[b.type]) return 1;
+			return 0;
+		});
 
+		// Pre-select fill over stroke if the element has a non-transparent fill
+		const colorGroup = _propsByType.find((g) => g.type === "color");
+
+		if (colorGroup) {
+			const fillIndex = colorGroup.props.indexOf("fill");
+			const fillValue = _allCurrentPropDefs["fill"]?.value;
+
+			if (fillIndex !== -1 && fillValue && fillValue !== "#00000000") {
+				colorGroup.selected = fillIndex;
+			}
+		}
+
+		set(propsByType, _propsByType, true);
 		set(allCurrentPropDefs, _allCurrentPropDefs, true);
 		updateHelpers();
 	}
@@ -6049,16 +6119,16 @@ function InlineStyleEditor$1($$anchor, $$props) {
 	bind_this(svg, ($$value) => set(helperElemWrapper, $$value), () => get(helperElemWrapper));
 
 	var div_1 = sibling(svg, 2);
-	var div_2 = child(div_1);
+	var button = child(div_1);
 
-	div_2.__click = close;
+	button.__click = close;
 
-	var node = sibling(div_2, 2);
+	var node = sibling(button, 2);
 
 	{
 		var consequent = ($$anchor) => {
-			var div_3 = root_1();
-			var node_1 = sibling(child(div_3), 2);
+			var div_2 = root_1();
+			var node_1 = sibling(child(div_2), 2);
 
 			each(node_1, 17, () => get(targetsToSearch), index, ($$anchor, $$item, elemIndex) => {
 				var $$array = user_derived(() => to_array(get($$item), 2));
@@ -6087,7 +6157,7 @@ function InlineStyleEditor$1($$anchor, $$props) {
 
 				append($$anchor, span);
 			});
-			append($$anchor, div_3);
+			append($$anchor, div_2);
 		};
 
 		if_block(node, ($$render) => {
@@ -6095,264 +6165,285 @@ function InlineStyleEditor$1($$anchor, $$props) {
 		});
 	}
 
-	var div_4 = sibling(node, 2);
-	var node_2 = sibling(child(div_4), 2);
+	var node_2 = sibling(node, 2);
 
 	{
-		var consequent_1 = ($$anchor) => {
-			var select = root_3();
+		var consequent_2 = ($$anchor) => {
+			var div_3 = root_3();
+			var node_3 = sibling(child(div_3), 2);
 
-			select.__change = [on_change, selectRule];
+			{
+				var consequent_1 = ($$anchor) => {
+					var select = root_4();
 
-			each(select, 21, () => getRuleNames(get(allRules)[get(selectedElemIndex)]), index, ($$anchor, ruleName, ruleIndex) => {
-				var option = root_4();
+					select.__change = [on_change, selectRule];
 
-				option.value = option.__value = ruleIndex;
+					each(select, 21, () => getRuleNames(get(allRules)[get(selectedElemIndex)]), index, ($$anchor, ruleName, ruleIndex) => {
+						var option = root_5();
 
-				var text_1 = child(option);
+						option.value = option.__value = ruleIndex;
 
-				template_effect(
-					($0) => {
-						set_selected(option, get(selectedRuleIndex) === ruleIndex);
-						set_text(text_1, $0);
-					},
-					[
-						() => getCssRuleName(get(ruleName), get(clickedElement))
-					]
-				);
+						var text_1 = child(option);
 
-				append($$anchor, option);
-			});
-			append($$anchor, select);
-		};
+						template_effect(
+							($0) => {
+								set_selected(option, get(selectedRuleIndex) === ruleIndex);
+								set_text(text_1, $0);
+							},
+							[
+								() => getCssRuleName(get(ruleName), get(clickedElement))
+							]
+						);
 
-		var alternate = ($$anchor) => {
-			var fragment_1 = comment();
-			var node_3 = first_child(fragment_1);
-
-			each(node_3, 17, () => getRuleNames(get(allRules)[get(selectedElemIndex)]), index, ($$anchor, ruleName, ruleIndex) => {
-				var span_1 = root_6();
-
-				span_1.__click = () => {
-					selectRule(ruleIndex);
+						append($$anchor, option);
+					});
+					append($$anchor, select);
 				};
 
-				let classes_1;
-				var text_2 = child(span_1);
+				var alternate = ($$anchor) => {
+					var fragment_1 = comment();
+					var node_4 = first_child(fragment_1);
 
-				template_effect(
-					($0, $1) => {
-						set_attribute(span_1, 'title', get(ruleName));
-						classes_1 = set_class(span_1, 1, '', null, classes_1, $0);
-						set_text(text_2, $1);
-					},
-					[
-						() => ({
-							selected: get(selectedRuleIndex) === ruleIndex
-						}),
-						() => getCssRuleName(get(ruleName), get(clickedElement))
-					]
-				);
+					each(node_4, 17, () => getRuleNames(get(allRules)[get(selectedElemIndex)]), index, ($$anchor, ruleName, ruleIndex) => {
+						var span_1 = root_7();
 
-				append($$anchor, span_1);
-			});
+						span_1.__click = () => {
+							selectRule(ruleIndex);
+						};
 
-			append($$anchor, fragment_1);
+						let classes_1;
+						var text_2 = child(span_1);
+
+						template_effect(
+							($0, $1) => {
+								set_attribute(span_1, 'title', get(ruleName));
+								classes_1 = set_class(span_1, 1, '', null, classes_1, $0);
+								set_text(text_2, $1);
+							},
+							[
+								() => ({
+									selected: get(selectedRuleIndex) === ruleIndex
+								}),
+								() => getCssRuleName(get(ruleName), get(clickedElement))
+							]
+						);
+
+						append($$anchor, span_1);
+					});
+
+					append($$anchor, fragment_1);
+				};
+
+				if_block(node_3, ($$render) => {
+					if (nbChars(getRuleNamesTransformed(get(allRules)[get(selectedElemIndex)])) > 30) $$render(consequent_1); else $$render(alternate, false);
+				});
+			}
+			append($$anchor, div_3);
 		};
 
 		if_block(node_2, ($$render) => {
-			if (nbChars(getRuleNamesTransformed(get(allRules)[get(selectedElemIndex)])) > 30) $$render(consequent_1); else $$render(alternate, false);
+			if (get(allRules)[get(selectedElemIndex)]?.length > 1) $$render(consequent_2);
 		});
 	}
 
-	var div_5 = sibling(div_4, 2);
-	var node_4 = sibling(child(div_5), 2);
-
-	each(node_4, 17, () => get(allTypes)[get(selectedElemIndex)] || [], index, ($$anchor, type, typeIndex) => {
-		var fragment_2 = comment();
-		var node_5 = first_child(fragment_2);
-
-		{
-			var consequent_2 = ($$anchor) => {
-				var span_2 = root_8();
-
-				span_2.__click = () => {
-					set(selectedTypeIndex, typeIndex, true);
-				};
-
-				let classes_2;
-				var text_3 = child(span_2);
-
-				template_effect(
-					($0, $1) => {
-						classes_2 = set_class(span_2, 1, '', null, classes_2, $0);
-						set_text(text_3, $1);
-					},
-					[
-						() => ({
-							selected: get(selectedTypeIndex) === typeIndex
-						}),
-						() => get(type) === "stroke" ? "SVG paint" : capitalizeFirstLetter(get(type))
-					]
-				);
-
-				append($$anchor, span_2);
-			};
-
-			if_block(node_5, ($$render) => {
-				if (get(type) !== "custom" || get(currentRule) === "inline" && get(type) === "custom" && get(hasDisplayedCustom)) $$render(consequent_2);
-			});
-		}
-
-		append($$anchor, fragment_2);
-	});
-
-	var node_6 = sibling(div_5, 2);
+	var node_5 = sibling(node_2, 2);
 
 	{
-		var consequent_11 = ($$anchor) => {
-			var div_6 = root_9();
-			var node_7 = child(div_6);
+		var consequent_4 = ($$anchor) => {
+			var div_4 = root_8();
+			var node_6 = sibling(child(div_4), 2);
 
-			each(node_7, 17, () => get(propsByType), index, ($$anchor, choices, $$index_6) => {
-				var div_7 = root_10();
-				const selectedName = user_derived(() => get(choices).props[get(choices).selected]);
-				var div_8 = child(div_7);
-				var node_8 = child(div_8);
+			each(node_6, 17, () => get(allTypes)[get(selectedElemIndex)] || [], index, ($$anchor, type, typeIndex) => {
+				var fragment_2 = comment();
+				var node_7 = first_child(fragment_2);
 
 				{
-					var consequent_4 = ($$anchor) => {
-						var select_1 = root_11();
+					var consequent_3 = ($$anchor) => {
+						var span_2 = root_10();
 
-						select_1.__change = [on_change_1, choices];
+						span_2.__click = () => {
+							set(selectedTypeIndex, typeIndex, true);
+						};
 
-						each(select_1, 21, () => get(choices).props, index, ($$anchor, propName, i) => {
-							var option_1 = root_12();
+						let classes_2;
+						var text_3 = child(span_2);
 
-							option_1.value = option_1.__value = i;
+						template_effect(
+							($0, $1) => {
+								classes_2 = set_class(span_2, 1, '', null, classes_2, $0);
+								set_text(text_3, $1);
+							},
+							[
+								() => ({
+									selected: get(selectedTypeIndex) === typeIndex
+								}),
+								() => get(type) === "stroke" ? "SVG paint" : capitalizeFirstLetter(get(type))
+							]
+						);
 
-							var node_9 = child(option_1);
-
-							{
-								var consequent_3 = ($$anchor) => {
-									var text_4 = text();
-
-									template_effect(($0) => set_text(text_4, `${$0 ?? ''} color`), [
-										() => capitalizeFirstLetter(get(propName))
-									]);
-
-									append($$anchor, text_4);
-								};
-
-								var alternate_1 = ($$anchor) => {
-									var text_5 = text();
-
-									template_effect(($0) => set_text(text_5, $0), [
-										() => pascalCaseToSentence(get(propName))
-									]);
-
-									append($$anchor, text_5);
-								};
-
-								if_block(node_9, ($$render) => {
-									if (get(choices).type === "color") $$render(consequent_3); else $$render(alternate_1, false);
-								});
-							}
-							template_effect(() => set_selected(option_1, i === get(choices).selected));
-							append($$anchor, option_1);
-						});
-						append($$anchor, select_1);
+						append($$anchor, span_2);
 					};
 
-					var alternate_2 = ($$anchor) => {
-						var span_3 = root_15();
-						var text_6 = child(span_3);
-
-						template_effect(($0) => set_text(text_6, $0), [
-							() => pascalCaseToSentence(get(selectedName))
-						]);
-
-						append($$anchor, span_3);
-					};
-
-					if_block(node_8, ($$render) => {
-						if (get(choices).props.length > 1) $$render(consequent_4); else $$render(alternate_2, false);
+					if_block(node_7, ($$render) => {
+						if (get(type) !== "custom" || get(currentRule) === "inline" && get(type) === "custom" && get(hasDisplayedCustom)) $$render(consequent_3);
 					});
 				}
 
-				var span_4 = sibling(node_8, 2);
+				append($$anchor, fragment_2);
+			});
+			append($$anchor, div_4);
+		};
 
-				span_4.__click = [on_click, deleteProp, selectedName];
+		if_block(node_5, ($$render) => {
+			if ((get(allTypes)[get(selectedElemIndex)] || []).filter((t) => t !== "custom" || get(currentRule) === "inline" && get(hasDisplayedCustom)).length > 1) $$render(consequent_4);
+		});
+	}
 
-				var node_10 = sibling(div_8, 2);
+	var node_8 = sibling(node_5, 2);
+
+	{
+		var consequent_12 = ($$anchor) => {
+			var div_5 = root_11();
+			var node_9 = child(div_5);
+
+			each(node_9, 17, () => get(propsByType), index, ($$anchor, choices, $$index_6) => {
+				var div_6 = root_12();
+				const selectedName = user_derived(() => get(choices).props[get(choices).selected]);
+				var div_7 = child(div_6);
+				var div_8 = child(div_7);
+				var node_10 = child(div_8);
 
 				{
 					var consequent_5 = ($$anchor) => {
-						var fragment_5 = root_16();
-						var input = first_child(fragment_5);
+						var fragment_3 = root_13();
+						var div_9 = first_child(fragment_3);
+
+						each(div_9, 21, () => get(choices).props, index, ($$anchor, propName, i) => {
+							var button_1 = root_14();
+							let classes_3;
+
+							button_1.__click = async () => {
+								(get(choices).selected = i);
+								await tick();
+							};
+
+							var node_11 = child(button_1);
+
+							html(node_11, () => propertyIcons[get(propName)]);
+
+							template_effect(
+								($0, $1) => {
+									classes_3 = set_class(button_1, 1, 'icon-btn', null, classes_3, $0);
+									set_attribute(button_1, 'title', $1);
+								},
+								[
+									() => ({ selected: i === get(choices).selected }),
+									() => get(choices).type === "color" ? `${capitalizeFirstLetter(get(propName))} color` : pascalCaseToSentence(get(propName))
+								]
+							);
+
+							append($$anchor, button_1);
+						});
+
+						var span_3 = sibling(div_9, 2);
+						var text_4 = child(span_3);
+
+						template_effect(($0) => set_text(text_4, $0), [
+							() => get(choices).type === "color" ? `${capitalizeFirstLetter(get(selectedName))} color` : pascalCaseToSentence(get(selectedName))
+						]);
+
+						append($$anchor, fragment_3);
+					};
+
+					var alternate_1 = ($$anchor) => {
+						var span_4 = root_15();
+						var text_5 = child(span_4);
+
+						template_effect(($0) => set_text(text_5, $0), [
+							() => pascalCaseToSentence(get(selectedName))
+						]);
+
+						append($$anchor, span_4);
+					};
+
+					if_block(node_10, ($$render) => {
+						if (get(choices).props.length > 1) $$render(consequent_5); else $$render(alternate_1, false);
+					});
+				}
+
+				var button_2 = sibling(div_8, 2);
+
+				button_2.__click = [on_click, deleteProp, selectedName];
+
+				var node_12 = sibling(div_7, 2);
+
+				{
+					var consequent_6 = ($$anchor) => {
+						var fragment_4 = root_16();
+						var input = first_child(fragment_4);
 
 						input.__change = [
-							on_change_2,
+							on_change_1,
 							updateProp,
 							selectedName,
 							allCurrentPropDefs
 						];
 
 						var span_5 = sibling(input, 2);
-						var text_7 = child(span_5);
+						var text_6 = child(span_5);
 
 						template_effect(() => {
 							set_attribute(input, 'min', get(allCurrentPropDefs)[get(selectedName)].min);
 							set_attribute(input, 'max', get(allCurrentPropDefs)[get(selectedName)].max);
 							set_attribute(input, 'step', get(allCurrentPropDefs)[get(selectedName)].step || 1);
 							set_value(input, get(allCurrentPropDefs)[get(selectedName)].value);
-							set_text(text_7, get(allCurrentPropDefs)[get(selectedName)].displayed);
+							set_text(text_6, get(allCurrentPropDefs)[get(selectedName)].displayed);
 						});
 
-						append($$anchor, fragment_5);
+						append($$anchor, fragment_4);
 					};
 
-					var alternate_3 = ($$anchor, $$elseif) => {
+					var alternate_2 = ($$anchor, $$elseif) => {
 						{
-							var consequent_7 = ($$anchor) => {
-								var select_2 = root_18();
+							var consequent_8 = ($$anchor) => {
+								var select_1 = root_18();
 								const choices = user_derived(() => get(allCurrentPropDefs)[get(selectedName)].choices());
 
-								select_2.__change = [on_change_3, updateProp, selectedName];
+								select_1.__change = [on_change_2, updateProp, selectedName];
 
-								var node_11 = child(select_2);
+								var node_13 = child(select_1);
 
 								{
-									var consequent_6 = ($$anchor) => {
-										var option_2 = root_19();
+									var consequent_7 = ($$anchor) => {
+										var option_1 = root_19();
 
-										append($$anchor, option_2);
+										append($$anchor, option_1);
 									};
 
-									if_block(node_11, ($$render) => {
-										if (!get(choices).includes(get(allCurrentPropDefs)[get(selectedName)].value)) $$render(consequent_6);
+									if_block(node_13, ($$render) => {
+										if (!get(choices).includes(get(allCurrentPropDefs)[get(selectedName)].value)) $$render(consequent_7);
 									});
 								}
 
-								var node_12 = sibling(node_11);
+								var node_14 = sibling(node_13);
 
-								each(node_12, 17, () => get(choices), index, ($$anchor, choice) => {
-									var option_3 = root_20();
-									var text_8 = child(option_3);
+								each(node_14, 17, () => get(choices), index, ($$anchor, choice) => {
+									var option_2 = root_20();
+									var text_7 = child(option_2);
 
 									template_effect(() => {
-										set_selected(option_3, get(choice) == get(allCurrentPropDefs)[get(selectedName)].value || null);
-										set_text(text_8, get(choice));
+										set_selected(option_2, get(choice) == get(allCurrentPropDefs)[get(selectedName)].value || null);
+										set_text(text_7, get(choice));
 									});
 
-									append($$anchor, option_3);
+									append($$anchor, option_2);
 								});
-								append($$anchor, select_2);
+								append($$anchor, select_1);
 							};
 
-							var alternate_4 = ($$anchor, $$elseif) => {
+							var alternate_3 = ($$anchor, $$elseif) => {
 								{
-									var consequent_8 = ($$anchor) => {
+									var consequent_9 = ($$anchor) => {
 										ColorPicker($$anchor, {
 											get value() {
 												return get(allCurrentPropDefs)[get(selectedName)].value;
@@ -6364,7 +6455,7 @@ function InlineStyleEditor$1($$anchor, $$props) {
 									if_block(
 										$$anchor,
 										($$render) => {
-											if (get(choices).type == "color") $$render(consequent_8);
+											if (get(choices).type == "color") $$render(consequent_9);
 										},
 										$$elseif
 									);
@@ -6374,29 +6465,29 @@ function InlineStyleEditor$1($$anchor, $$props) {
 							if_block(
 								$$anchor,
 								($$render) => {
-									if (get(choices).type == "select") $$render(consequent_7); else $$render(alternate_4, false);
+									if (get(choices).type == "select") $$render(consequent_8); else $$render(alternate_3, false);
 								},
 								$$elseif
 							);
 						}
 					};
 
-					if_block(node_10, ($$render) => {
-						if (get(choices).type === "slider") $$render(consequent_5); else $$render(alternate_3, false);
+					if_block(node_12, ($$render) => {
+						if (get(choices).type === "slider") $$render(consequent_6); else $$render(alternate_2, false);
 					});
 				}
-				template_effect(() => set_class(div_7, 1, `prop-section ${get(choices).type ?? ''}`));
-				append($$anchor, div_7);
+				template_effect(() => set_class(div_6, 1, `prop-section ${get(choices).type ?? ''}`));
+				append($$anchor, div_6);
 			});
 
-			var node_13 = sibling(node_7, 2);
+			var node_15 = sibling(node_9, 2);
 
 			{
-				var consequent_9 = ($$anchor) => {
-					var div_9 = root_23();
-					let classes_3;
+				var consequent_10 = ($$anchor) => {
+					var div_10 = root_23();
+					let classes_4;
 
-					div_9.__click = [
+					div_10.__click = [
 						bringToFront,
 						bringableToFront,
 						selectedElemIndex,
@@ -6405,39 +6496,39 @@ function InlineStyleEditor$1($$anchor, $$props) {
 						currentRule
 					];
 
-					template_effect(($0) => classes_3 = set_class(div_9, 1, 'btn', null, classes_3, $0), [
+					template_effect(($0) => classes_4 = set_class(div_10, 1, 'btn', null, classes_4, $0), [
 						() => ({
 							active: get(bringableToFront)[get(selectedElemIndex)] === true
 						})
 					]);
 
-					append($$anchor, div_9);
-				};
-
-				if_block(node_13, ($$render) => {
-					if (get(currentRule) === "inline" && get(bringableToFront)[get(selectedElemIndex)] !== null) $$render(consequent_9);
-				});
-			}
-
-			var node_14 = sibling(node_13, 2);
-
-			{
-				var consequent_10 = ($$anchor) => {
-					var div_10 = root_24();
-
-					div_10.__click = [deleteElem, currentElement, close];
 					append($$anchor, div_10);
 				};
 
-				if_block(node_14, ($$render) => {
-					if (get(currentRule) === "inline" && inlineDeletable(get(currentElement))) $$render(consequent_10);
+				if_block(node_15, ($$render) => {
+					if (get(currentRule) === "inline" && get(bringableToFront)[get(selectedElemIndex)] !== null) $$render(consequent_10);
 				});
 			}
-			append($$anchor, div_6);
+
+			var node_16 = sibling(node_15, 2);
+
+			{
+				var consequent_11 = ($$anchor) => {
+					var div_11 = root_24();
+
+					div_11.__click = [deleteElem, currentElement, close];
+					append($$anchor, div_11);
+				};
+
+				if_block(node_16, ($$render) => {
+					if (get(currentRule) === "inline" && inlineDeletable(get(currentElement))) $$render(consequent_11);
+				});
+			}
+			append($$anchor, div_5);
 		};
 
-		if_block(node_6, ($$render) => {
-			if (get(allTypes)[get(selectedElemIndex)]) $$render(consequent_11);
+		if_block(node_8, ($$render) => {
+			if (get(allTypes)[get(selectedElemIndex)]) $$render(consequent_12);
 		});
 	}
 	bind_this(div_1, ($$value) => set(self, $$value), () => get(self));
@@ -6462,3 +6553,4 @@ class InlineStyleEditor {
 }
 
 export { InlineStyleEditor as default };
+//# sourceMappingURL=inline-style-editor.mjs.map
