@@ -513,46 +513,50 @@
             {/each}
         </div>
     {/if}
-    <div class="select-tab">
-        <b> Applied to: </b>
-        {#if nbChars(getRuleNamesTransformed(allRules[selectedElemIndex])) > 30}
-            <select onchange={(e) => selectRule(e.target.value)}>
+    {#if allRules[selectedElemIndex]?.length > 1}
+        <div class="select-tab">
+            <b> Applied to: </b>
+            {#if nbChars(getRuleNamesTransformed(allRules[selectedElemIndex])) > 30}
+                <select onchange={(e) => selectRule(e.target.value)}>
+                    {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
+                        <option selected={selectedRuleIndex === ruleIndex} value={ruleIndex}
+                            >{getCssRuleName(ruleName, clickedElement)}</option
+                        >
+                    {/each}
+                </select>
+            {:else}
                 {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
-                    <option selected={selectedRuleIndex === ruleIndex} value={ruleIndex}
-                        >{getCssRuleName(ruleName, clickedElement)}</option
+                    <span
+                        title={ruleName}
+                        class:selected={selectedRuleIndex === ruleIndex}
+                        onclick={() => {
+                            selectRule(ruleIndex);
+                        }}
+                    >
+                        {getCssRuleName(ruleName, clickedElement)}</span
                     >
                 {/each}
-            </select>
-        {:else}
-            {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
-                <span
-                    title={ruleName}
-                    class:selected={selectedRuleIndex === ruleIndex}
-                    onclick={() => {
-                        selectRule(ruleIndex);
-                    }}
-                >
-                    {getCssRuleName(ruleName, clickedElement)}</span
-                >
-            {/each}
-        {/if}
-    </div>
-    <div class="select-tab">
-        <b> Property type: </b>
-        {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
-            <!-- Only display "custom" on "inline" rule -->
-            {#if type !== "custom" || (currentRule === "inline" && type === "custom" && hasDisplayedCustom)}
-                <span
-                    class:selected={selectedTypeIndex === typeIndex}
-                    onclick={() => {
-                        selectedTypeIndex = typeIndex;
-                    }}
-                >
-                    {type === "stroke" ? "SVG paint" : capitalizeFirstLetter(type)}
-                </span>
             {/if}
-        {/each}
-    </div>
+        </div>
+    {/if}
+    {#if (allTypes[selectedElemIndex] || []).filter((t) => t !== "custom" || (currentRule === "inline" && hasDisplayedCustom)).length > 1}
+        <div class="select-tab">
+            <b> Property type: </b>
+            {#each allTypes[selectedElemIndex] || [] as type, typeIndex}
+                <!-- Only display "custom" on "inline" rule -->
+                {#if type !== "custom" || (currentRule === "inline" && type === "custom" && hasDisplayedCustom)}
+                    <span
+                        class:selected={selectedTypeIndex === typeIndex}
+                        onclick={() => {
+                            selectedTypeIndex = typeIndex;
+                        }}
+                    >
+                        {type === "stroke" ? "SVG paint" : capitalizeFirstLetter(type)}
+                    </span>
+                {/if}
+            {/each}
+        </div>
+    {/if}
     {#if allTypes[selectedElemIndex]}
         <div class="editor">
             {#each propsByType as choices}
