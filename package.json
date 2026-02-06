@@ -1,6 +1,6 @@
 {
   "name": "inline-style-editor",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Update CSS rules or add inline style to elements visualy",
   "scripts": {
     "build": "rollup --config",
