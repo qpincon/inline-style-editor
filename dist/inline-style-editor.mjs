@@ -5770,8 +5770,20 @@ function InlineStyleEditor$1($$anchor, $$props) {
 			} else {
 				_allCurrentPropDefs[key].displayed = getComputedPropValue(get(currentElement), key, "raw");
 				_allCurrentPropDefs[key].value = getComputedPropValue(get(currentElement), key, retrieveType);
+
+				// Special handling for SVG fill with url() expressions (e.g., gradients)
+				if (key === "fill") {
+					const rawFill = get(currentElement).getAttribute?.("fill") || _allCurrentPropDefs[key].displayed;
+
+					if (rawFill && rawFill.includes("url(")) {
+						_allCurrentPropDefs[key].originalUrl = rawFill;
+						_allCurrentPropDefs[key].value = "#00000000";
+					}
+				}
 			}
 		});
+
+		console.log(_allCurrentPropDefs);
 
 		const _propsByType = Object.entries(_allCurrentPropDefs).reduce(
 			(byType, [propName, selectorDef]) => {
@@ -6099,6 +6111,19 @@ function InlineStyleEditor$1($$anchor, $$props) {
 			propDef.value = defaultValue;
 			propDef.displayed = defaultValue;
 			onStyleChanged(get(currentElement), get(currentRule), propName, defaultValue);
+		} else if (propName === "fill" && propDef?.originalUrl) {
+			// Restore original url() expression for SVG fill
+			const urlValue = propDef.originalUrl;
+
+			if (get(currentRule) === "inline") {
+				get(currentElement).style.fill = urlValue;
+			} else {
+				get(currentRule).style.setProperty("fill", urlValue);
+			}
+
+			propDef.value = "#00000000";
+			propDef.displayed = urlValue;
+			onStyleChanged(get(currentElement), get(currentRule), "fill", urlValue);
 		} else {
 			// Standard CSS property reset
 			if (get(currentRule) === "inline") {

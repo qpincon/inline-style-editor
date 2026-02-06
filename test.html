@@ -98,6 +98,21 @@
     <svg class="test" width="190" height="160" xmlns="http://www.w3.org/2000/svg">
         <path class="my-path" d="M10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80" stroke="blue" fill="orange" />
     </svg>
+    <svg width="190" height="160" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <pattern id="pattern-background" patternUnits="userSpaceOnUse" width="10" height="10"
+                patternTransform="scale(1.5)">
+                <rect width="10" height="10" fill="#FFF1E6"></rect>
+                <circle cx="5" cy="5" r="2.4" fill="#FFE0D1"></circle>
+                <circle cx="0" cy="0" r="2.4" fill="#FFE0D1"></circle>
+                <circle cx="0" cy="10" r="2.4" fill="#FFE0D1"></circle>
+                <circle cx="10" cy="0" r="2.4" fill="#FFE0D1"></circle>
+                <circle cx="10" cy="10" r="2.4" fill="#FFE0D1"></circle>
+            </pattern>
+        </defs>
+        <path class="my-path" d="M10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80" stroke="blue"
+            fill="url(#pattern-background)" />
+    </svg>
     <svg xmlns="http://www.w3.org/2000/svg" id="map" width="850" height="950">
         <g id="outline" style="fill:url(#noise)">
             <path d="M-5-5h860v960H-5Z" class="outline"></path>
