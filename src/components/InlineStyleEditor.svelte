@@ -253,7 +253,10 @@
         const sheets = document.styleSheets;
         return elems.reduce((matchedRulesByElem, elemDef) => {
             const el = elemDef[0];
-            const matchedRules = ["inline"];
+            const matchedRules = [];
+            if (cssRuleFilter === null || cssRuleFilter(el, "inline")) {
+                matchedRules.push("inline");
+            }
             for (let i in sheets) {
                 try {
                     const rules = sheets[i].cssRules;
@@ -342,6 +345,7 @@
         allTypes = getEditableTypes(targetsToSearch);
         hasDisplayedCustom = false;
         allRules = getMatchedCSSRules(targetsToSearch);
+        if (allRules.every((rules) => rules.length === 0)) return;
         for (let def of Object.values(customProps)) {
             if (def.getter(el) !== null) {
                 hasDisplayedCustom = true;
