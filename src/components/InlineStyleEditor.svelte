@@ -587,9 +587,9 @@
         <div class="select-tab">
             <b> Applied to: </b>
             {#if nbChars(getRuleNamesTransformed(allRules[selectedElemIndex])) > 30}
-                <select onchange={(e) => selectRule(e.target.value)}>
+                <select value={selectedRuleIndex} onchange={(e) => selectRule(e.target.value)}>
                     {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
-                        <option selected={selectedRuleIndex === ruleIndex} value={ruleIndex}
+                        <option value={ruleIndex}
                             >{getCssRuleName(ruleName, clickedElement)}</option
                         >
                     {/each}
