@@ -42,7 +42,7 @@
         "stroke-width": {
             type: "slider",
             min: 0,
-            max: 20,
+            max: 5,
             step: 0.5,
             suffix: "px",
         },
@@ -173,6 +173,10 @@
         const allProps = { ...cssPropByType, ...customProps };
         const _allCurrentPropDefs = pick(allProps, propByType[curType]);
         ignoredProps.forEach((prop) => delete _allCurrentPropDefs[prop]);
+        const elemTagName = currentElement?.tagName?.toLowerCase();
+        if (curType === typeText && (elemTagName === "text" || elemTagName === "tspan")) {
+            delete _allCurrentPropDefs["color"];
+        }
         Object.keys(_allCurrentPropDefs).forEach((key) => {
             const propSelectType = _allCurrentPropDefs[key].type;
             let retrieveType = "number";
@@ -199,7 +203,6 @@
                 }
             }
         });
-        console.log(_allCurrentPropDefs);
         const _propsByType = Object.entries(_allCurrentPropDefs)
             .reduce((byType, [propName, selectorDef]) => {
                 const selectorType = selectorDef.type;
@@ -589,9 +592,7 @@
             {#if nbChars(getRuleNamesTransformed(allRules[selectedElemIndex])) > 30}
                 <select value={selectedRuleIndex} onchange={(e) => selectRule(e.target.value)}>
                     {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
-                        <option value={ruleIndex}
-                            >{getCssRuleName(ruleName, clickedElement)}</option
-                        >
+                        <option value={ruleIndex}>{getCssRuleName(ruleName, clickedElement)}</option>
                     {/each}
                 </select>
             {:else}

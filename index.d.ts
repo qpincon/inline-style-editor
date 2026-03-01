@@ -27,14 +27,16 @@ export interface SliderDefinition {
 
 export interface InlineStyleEditorOptions {
     onStyleChanged?: (
-        target: HTMLElement,
+        target: HTMLElement | SVGElement,
         eventType: "inline" | CSSStyleRule,
         cssProp: string,
         value: string,
     ) => void;
-    getElems: (el: HTMLElement) => void;
-    customProps: Record<string, ColorDefinition | SelectDefinition | SliderDefinition>;
-    cssRuleFilter: (el: HTMLElement, cssSelector: string) => boolean;
-    getCssRuleName: (ruleName: string, el: HTMLElement) => string;
-    inlineDeletable: (el: HTMLElement) => boolean,
+    getElems?: (el: HTMLElement | SVGElement) => [HTMLElement | SVGElement, string][];
+    listenOnClick?: boolean;
+    customProps?: Record<string, ColorDefinition | SelectDefinition | SliderDefinition>;
+    cssRuleFilter?: (el: HTMLElement | SVGElement, cssSelector: string) => boolean;
+    getCssRuleName?: (ruleName: string, el: HTMLElement | SVGElement) => string;
+    inlineDeletable?: (el: HTMLElement | SVGElement) => boolean;
+    ignoredProps?: string[];
 }

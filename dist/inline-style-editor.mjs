@@ -5747,7 +5747,7 @@ function InlineStyleEditor$1($$anchor, $$props) {
 		"stroke-width": {
 			type: "slider",
 			min: 0,
-			max: 20,
+			max: 5,
 			step: 0.5,
 			suffix: "px"
 		},
@@ -5885,6 +5885,12 @@ function InlineStyleEditor$1($$anchor, $$props) {
 
 		ignoredProps.forEach((prop) => delete _allCurrentPropDefs[prop]);
 
+		const elemTagName = get(currentElement)?.tagName?.toLowerCase();
+
+		if (get(curType) === typeText && (elemTagName === "text" || elemTagName === "tspan")) {
+			delete _allCurrentPropDefs["color"];
+		}
+
 		Object.keys(_allCurrentPropDefs).forEach((key) => {
 			const propSelectType = _allCurrentPropDefs[key].type;
 			let retrieveType = "number";
@@ -5916,8 +5922,6 @@ function InlineStyleEditor$1($$anchor, $$props) {
 				}
 			}
 		});
-
-		console.log(_allCurrentPropDefs);
 
 		const _propsByType = Object.entries(_allCurrentPropDefs).reduce(
 			(byType, [propName, selectorDef]) => {
