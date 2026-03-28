@@ -3407,6 +3407,16 @@ function to_class(value, hash, directives) {
 }
 
 /**
+ * @param {any} value
+ * @param {Record<string, any> | [Record<string, any>, Record<string, any>]} [styles]
+ * @returns {string | null}
+ */
+function to_style(value, styles) {
+
+	return value == null ? null : String(value);
+}
+
+/**
  * @param {Element} dom
  * @param {boolean | number} is_html
  * @param {string | null} value
@@ -3450,6 +3460,34 @@ function set_class(dom, is_html, value, hash, prev_classes, next_classes) {
 	}
 
 	return next_classes;
+}
+
+/**
+ * @param {Element & ElementCSSInlineStyle} dom
+ * @param {string | null} value
+ * @param {Record<string, any> | [Record<string, any>, Record<string, any>]} [prev_styles]
+ * @param {Record<string, any> | [Record<string, any>, Record<string, any>]} [next_styles]
+ */
+function set_style(dom, value, prev_styles, next_styles) {
+	// @ts-expect-error
+	var prev = dom.__style;
+
+	if (prev !== value) {
+		var next_style_attr = to_style(value);
+
+		{
+			if (next_style_attr == null) {
+				dom.removeAttribute('style');
+			} else {
+				dom.style.cssText = next_style_attr;
+			}
+		}
+
+		// @ts-expect-error
+		dom.__style = value;
+	}
+
+	return next_styles;
 }
 
 /**
@@ -5634,7 +5672,7 @@ function deleteElem(__2, currentElement, close) {
 
 var root_2 = from_html(`<span> </span>`);
 var root_1 = from_html(`<div class="select-tab"><b>Element</b> <!></div>`);
-var on_change = (e, selectRule) => selectRule(e.target.value);
+var on_change = (e, selectRule) => selectRule(+e.target.value);
 var root_5 = from_html(`<option> </option>`);
 var root_4 = from_html(`<select></select>`);
 var root_7 = from_html(`<span> </span>`);
@@ -5828,6 +5866,7 @@ function InlineStyleEditor$1($$anchor, $$props) {
 	let allCurrentPropDefs = state(proxy({})); // propName => selectorDef
 	let bringableToFront = state(proxy([])); // null = not bringable, true = bringable, false = was bringed
 	let hasDisplayedCustom = state(false);
+	let baseUrl = state(proxy(window.location.href.replace(/#.*$/, "")));
 	// Reactive derived values
 	const currentElement = user_derived(() => get(targetsToSearch)[get(selectedElemIndex)]?.[0]);
 	const currentRule = user_derived(() => get(allRules)[get(selectedElemIndex)]?.[get(selectedRuleIndex)]);
@@ -6067,6 +6106,7 @@ function InlineStyleEditor$1($$anchor, $$props) {
 
 	async function open(el, x, y) {
 		set(clickedElement, el, true);
+		set(baseUrl, window.location.href.replace(/#.*$/, ""), true);
 		udpatePageDimensions();
 		if (el.classList.contains("overlay-over")) return overlayClicked(); else if (get(self).contains(el)) return;
 		set(selectedElemIndex, 0);
@@ -6312,6 +6352,8 @@ function InlineStyleEditor$1($$anchor, $$props) {
 
 	var clipPath = child(svg);
 	var path = child(clipPath);
+
+	var rect_1 = sibling(clipPath);
 	bind_this(svg, ($$value) => set(helperElemWrapper, $$value), () => get(helperElemWrapper));
 
 	var div_1 = sibling(svg, 2);
@@ -6741,6 +6783,7 @@ function InlineStyleEditor$1($$anchor, $$props) {
 		set_attribute(svg, 'width', get(pageDimensions).width);
 		set_attribute(svg, 'height', get(pageDimensions).height);
 		set_attribute(path, 'd', get(pathWithHoles));
+		set_style(rect_1, `clip-path: url(${get(baseUrl) ?? ''}#overlay-clip)`);
 	});
 
 	append($$anchor, fragment);
@@ -6757,4 +6800,3 @@ class InlineStyleEditor {
 }
 
 export { InlineStyleEditor as default };
-//# sourceMappingURL=inline-style-editor.mjs.map

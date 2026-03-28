@@ -121,6 +121,7 @@
     let allCurrentPropDefs = $state({}); // propName => selectorDef
     let bringableToFront = $state([]); // null = not bringable, true = bringable, false = was bringed
     let hasDisplayedCustom = $state(false);
+    let baseUrl = $state(window.location.href.replace(/#.*$/, ""));
 
     // Reactive derived values
     const currentElement = $derived(targetsToSearch[selectedElemIndex]?.[0]);
@@ -334,6 +335,7 @@
 
     export async function open(el, x, y) {
         clickedElement = el;
+        baseUrl = window.location.href.replace(/#.*$/, "");
         udpatePageDimensions();
         if (el.classList.contains("overlay-over")) return overlayClicked();
         else if (self.contains(el)) return;
@@ -561,7 +563,7 @@
     <clipPath id="overlay-clip" clip-rule="evenodd">
         <path d={pathWithHoles} />
     </clipPath>
-    <rect y="0" x="0" height="100%" width="100%" class="overlay-over" />
+    <rect y="0" x="0" height="100%" width="100%" class="overlay-over" style="clip-path: url({baseUrl}#overlay-clip)" />
 </svg>
 
 <div class="ise" bind:this={self}>
@@ -590,7 +592,7 @@
         <div class="select-tab">
             <b> Applied to: </b>
             {#if nbChars(getRuleNamesTransformed(allRules[selectedElemIndex])) > 30}
-                <select value={selectedRuleIndex} onchange={(e) => selectRule(e.target.value)}>
+                <select value={selectedRuleIndex} onchange={(e) => selectRule(+e.target.value)}>
                     {#each getRuleNames(allRules[selectedElemIndex]) as ruleName, ruleIndex}
                         <option value={ruleIndex}>{getCssRuleName(ruleName, clickedElement)}</option>
                     {/each}
