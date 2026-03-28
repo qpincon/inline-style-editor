@@ -6179,7 +6179,7 @@ function InlineStyleEditor$1($$anchor, $$props) {
 		let matching;
 
 		if (get(currentRule) === "inline") matching = [get(currentElement)]; else {
-			const selector = get(currentRule).selectorText.replace(/(:hover)|:focus/g, "");
+			const selector = get(currentRule).selectorText.replace(/(:hover)|:focus|\.hovered/g, "");
 
 			matching = Array.from(document.querySelectorAll(selector));
 		}

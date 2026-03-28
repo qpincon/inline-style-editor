@@ -403,7 +403,7 @@
         let matching;
         if (currentRule === "inline") matching = [currentElement];
         else {
-            const selector = currentRule.selectorText.replace(/(:hover)|:focus/g, "");
+            const selector = currentRule.selectorText.replace(/(:hover)|:focus|\.hovered/g, "");
             matching = Array.from(document.querySelectorAll(selector));
         }
         const boundingBoxes = matching.map((el) => getBoundingBoxInfos(el, 10));
